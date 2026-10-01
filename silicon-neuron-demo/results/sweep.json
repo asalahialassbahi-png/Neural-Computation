@@ -1,0 +1,1020 @@
+{
+  "ann_val_acc": 0.9832,
+  "ann_skip_cycles": 622670.1312,
+  "configs": {
+    "T6_tin3_x96_lam1": [
+      {
+        "margin": null,
+        "margin_k": null,
+        "acc": 0.98,
+        "steps": 6.0,
+        "events": 112.2622,
+        "hid_spikes": 36.2322,
+        "cycles": 455303.2
+      },
+      {
+        "margin": 40,
+        "margin_k": 0.5,
+        "acc": 0.9766,
+        "steps": 1.0272,
+        "events": 90.0006,
+        "hid_spikes": 21.0302,
+        "cycles": 346220.49399999995
+      },
+      {
+        "margin": 81,
+        "margin_k": 1,
+        "acc": 0.9786,
+        "steps": 1.0664,
+        "events": 90.3128,
+        "hid_spikes": 21.1916,
+        "cycles": 347580.21400000004
+      },
+      {
+        "margin": 162,
+        "margin_k": 2,
+        "acc": 0.9796,
+        "steps": 1.1554,
+        "events": 90.8932,
+        "hid_spikes": 21.4844,
+        "cycles": 350193.1479999999
+      },
+      {
+        "margin": 324,
+        "margin_k": 4,
+        "acc": 0.98,
+        "steps": 1.4106,
+        "events": 92.9826,
+        "hid_spikes": 22.5862,
+        "cycles": 359257.84
+      },
+      {
+        "margin": 648,
+        "margin_k": 8,
+        "acc": 0.98,
+        "steps": 2.5338,
+        "events": 102.0958,
+        "hid_spikes": 27.8766,
+        "cycles": 398914.14999999997
+      },
+      {
+        "margin": 1296,
+        "margin_k": 16,
+        "acc": 0.98,
+        "steps": 5.7852,
+        "events": 112.2524,
+        "hid_spikes": 36.073,
+        "cycles": 454099.249
+      },
+      {
+        "margin": 2592,
+        "margin_k": 32,
+        "acc": 0.98,
+        "steps": 6.0,
+        "events": 112.2622,
+        "hid_spikes": 36.2322,
+        "cycles": 455303.2
+      },
+      {
+        "margin": 5184,
+        "margin_k": 64,
+        "acc": 0.98,
+        "steps": 6.0,
+        "events": 112.2622,
+        "hid_spikes": 36.2322,
+        "cycles": 455303.2
+      }
+    ],
+    "T6_tin3_x128_lam1": [
+      {
+        "margin": null,
+        "margin_k": null,
+        "acc": 0.9788,
+        "steps": 6.0,
+        "events": 103.1848,
+        "hid_spikes": 36.3096,
+        "cycles": 422498.84799999994
+      },
+      {
+        "margin": 40,
+        "margin_k": 0.5,
+        "acc": 0.975,
+        "steps": 1.018,
+        "events": 89.8344,
+        "hid_spikes": 21.4524,
+        "cycles": 345627.55000000005
+      },
+      {
+        "margin": 81,
+        "margin_k": 1,
+        "acc": 0.9766,
+        "steps": 1.0548,
+        "events": 89.998,
+        "hid_spikes": 21.5938,
+        "cycles": 346434.565
+      },
+      {
+        "margin": 162,
+        "margin_k": 2,
+        "acc": 0.9786,
+        "steps": 1.1558,
+        "events": 90.3896,
+        "hid_spikes": 21.912,
+        "cycles": 348432.496
+      },
+      {
+        "margin": 324,
+        "margin_k": 4,
+        "acc": 0.9786,
+        "steps": 1.3406,
+        "events": 91.202,
+        "hid_spikes": 22.596,
+        "cycles": 352448.494
+      },
+      {
+        "margin": 648,
+        "margin_k": 8,
+        "acc": 0.9788,
+        "steps": 2.2734,
+        "events": 95.8564,
+        "hid_spikes": 26.8024,
+        "cycles": 374823.166
+      },
+      {
+        "margin": 1296,
+        "margin_k": 16,
+        "acc": 0.9788,
+        "steps": 5.5992,
+        "events": 103.127,
+        "hid_spikes": 35.9124,
+        "cycles": 420096.007
+      },
+      {
+        "margin": 2592,
+        "margin_k": 32,
+        "acc": 0.9788,
+        "steps": 6.0,
+        "events": 103.1848,
+        "hid_spikes": 36.3096,
+        "cycles": 422498.84799999994
+      },
+      {
+        "margin": 5184,
+        "margin_k": 64,
+        "acc": 0.9788,
+        "steps": 6.0,
+        "events": 103.1848,
+        "hid_spikes": 36.3096,
+        "cycles": 422498.84799999994
+      }
+    ],
+    "T6_tin3_x160_lam1": [
+      {
+        "margin": null,
+        "margin_k": null,
+        "acc": 0.9776,
+        "steps": 6.0,
+        "events": 92.7558,
+        "hid_spikes": 36.497,
+        "cycles": 384823.312
+      },
+      {
+        "margin": 44,
+        "margin_k": 0.5,
+        "acc": 0.9746,
+        "steps": 1.0196,
+        "events": 89.7146,
+        "hid_spikes": 23.3016,
+        "cycles": 345452.65900000004
+      },
+      {
+        "margin": 88,
+        "margin_k": 1,
+        "acc": 0.9766,
+        "steps": 1.0664,
+        "events": 89.7502,
+        "hid_spikes": 23.404,
+        "cycles": 345845.08900000004
+      },
+      {
+        "margin": 176,
+        "margin_k": 2,
+        "acc": 0.9776,
+        "steps": 1.1456,
+        "events": 89.8234,
+        "hid_spikes": 23.615,
+        "cycles": 346561.12
+      },
+      {
+        "margin": 352,
+        "margin_k": 4,
+        "acc": 0.9776,
+        "steps": 1.381,
+        "events": 90.0172,
+        "hid_spikes": 24.2652,
+        "cycles": 348606.52
+      },
+      {
+        "margin": 704,
+        "margin_k": 8,
+        "acc": 0.9776,
+        "steps": 2.2894,
+        "events": 90.9766,
+        "hid_spikes": 27.5158,
+        "cycles": 357364.438
+      },
+      {
+        "margin": 1408,
+        "margin_k": 16,
+        "acc": 0.9776,
+        "steps": 5.6218,
+        "events": 92.7438,
+        "hid_spikes": 36.0812,
+        "cycles": 382704.211
+      },
+      {
+        "margin": 2816,
+        "margin_k": 32,
+        "acc": 0.9776,
+        "steps": 6.0,
+        "events": 92.7558,
+        "hid_spikes": 36.497,
+        "cycles": 384823.312
+      },
+      {
+        "margin": 5632,
+        "margin_k": 64,
+        "acc": 0.9776,
+        "steps": 6.0,
+        "events": 92.7558,
+        "hid_spikes": 36.497,
+        "cycles": 384823.312
+      }
+    ],
+    "T6_tin4_x96_lam1": [
+      {
+        "margin": null,
+        "margin_k": null,
+        "acc": 0.9808,
+        "steps": 6.0,
+        "events": 112.2622,
+        "hid_spikes": 35.6162,
+        "cycles": 455220.04
+      },
+      {
+        "margin": 42,
+        "margin_k": 0.5,
+        "acc": 0.9734,
+        "steps": 1.024,
+        "events": 82.765,
+        "hid_spikes": 19.3496,
+        "cycles": 319819.831
+      },
+      {
+        "margin": 84,
+        "margin_k": 1,
+        "acc": 0.975,
+        "steps": 1.0578,
+        "events": 83.139,
+        "hid_spikes": 19.5152,
+        "cycles": 321374.689
+      },
+      {
+        "margin": 168,
+        "margin_k": 2,
+        "acc": 0.9794,
+        "steps": 1.1472,
+        "events": 83.9384,
+        "hid_spikes": 19.8832,
+        "cycles": 324791.59599999996
+      },
+      {
+        "margin": 336,
+        "margin_k": 4,
+        "acc": 0.9806,
+        "steps": 1.3748,
+        "events": 86.0102,
+        "hid_spikes": 20.845,
+        "cycles": 333626.37999999995
+      },
+      {
+        "margin": 672,
+        "margin_k": 8,
+        "acc": 0.9808,
+        "steps": 2.3294,
+        "events": 95.2812,
+        "hid_spikes": 25.6232,
+        "cycles": 372883.666
+      },
+      {
+        "margin": 1344,
+        "margin_k": 16,
+        "acc": 0.9808,
+        "steps": 5.6282,
+        "events": 111.9012,
+        "hid_spikes": 35.2418,
+        "cycles": 451879.069
+      },
+      {
+        "margin": 2688,
+        "margin_k": 32,
+        "acc": 0.9808,
+        "steps": 6.0,
+        "events": 112.2622,
+        "hid_spikes": 35.6162,
+        "cycles": 455220.04
+      },
+      {
+        "margin": 5376,
+        "margin_k": 64,
+        "acc": 0.9808,
+        "steps": 6.0,
+        "events": 112.2622,
+        "hid_spikes": 35.6162,
+        "cycles": 455220.04
+      }
+    ],
+    "T6_tin4_x128_lam1": [
+      {
+        "margin": null,
+        "margin_k": null,
+        "acc": 0.979,
+        "steps": 6.0,
+        "events": 103.1848,
+        "hid_spikes": 36.7254,
+        "cycles": 422554.98099999997
+      },
+      {
+        "margin": 44,
+        "margin_k": 0.5,
+        "acc": 0.976,
+        "steps": 1.0322,
+        "events": 82.7776,
+        "hid_spikes": 21.248,
+        "cycles": 320165.452
+      },
+      {
+        "margin": 89,
+        "margin_k": 1,
+        "acc": 0.9778,
+        "steps": 1.091,
+        "events": 83.1964,
+        "hid_spikes": 21.4738,
+        "cycles": 322023.88899999997
+      },
+      {
+        "margin": 178,
+        "margin_k": 2,
+        "acc": 0.9792,
+        "steps": 1.2022,
+        "events": 83.9444,
+        "hid_spikes": 21.901,
+        "cycles": 325379.38899999997
+      },
+      {
+        "margin": 356,
+        "margin_k": 4,
+        "acc": 0.979,
+        "steps": 1.519,
+        "events": 86.2168,
+        "hid_spikes": 23.2622,
+        "cycles": 335469.58900000004
+      },
+      {
+        "margin": 712,
+        "margin_k": 8,
+        "acc": 0.979,
+        "steps": 3.0882,
+        "events": 97.4518,
+        "hid_spikes": 30.6214,
+        "cycles": 385457.134
+      },
+      {
+        "margin": 1424,
+        "margin_k": 16,
+        "acc": 0.979,
+        "steps": 5.943,
+        "events": 103.1848,
+        "hid_spikes": 36.6864,
+        "cycles": 422245.33599999995
+      },
+      {
+        "margin": 2848,
+        "margin_k": 32,
+        "acc": 0.979,
+        "steps": 6.0,
+        "events": 103.1848,
+        "hid_spikes": 36.7254,
+        "cycles": 422554.98099999997
+      },
+      {
+        "margin": 5696,
+        "margin_k": 64,
+        "acc": 0.979,
+        "steps": 6.0,
+        "events": 103.1848,
+        "hid_spikes": 36.7254,
+        "cycles": 422554.98099999997
+      }
+    ],
+    "T6_tin4_x160_lam1": [
+      {
+        "margin": null,
+        "margin_k": null,
+        "acc": 0.9784,
+        "steps": 6.0,
+        "events": 92.7558,
+        "hid_spikes": 36.2796,
+        "cycles": 384793.963
+      },
+      {
+        "margin": 46,
+        "margin_k": 0.5,
+        "acc": 0.9744,
+        "steps": 1.0226,
+        "events": 82.5898,
+        "hid_spikes": 21.919,
+        "cycles": 319525.876
+      },
+      {
+        "margin": 93,
+        "margin_k": 1,
+        "acc": 0.9754,
+        "steps": 1.06,
+        "events": 82.7228,
+        "hid_spikes": 22.0592,
+        "cycles": 320225.314
+      },
+      {
+        "margin": 186,
+        "margin_k": 2,
+        "acc": 0.978,
+        "steps": 1.1592,
+        "events": 83.0078,
+        "hid_spikes": 22.3572,
+        "cycles": 321825.54699999996
+      },
+      {
+        "margin": 372,
+        "margin_k": 4,
+        "acc": 0.9784,
+        "steps": 1.4216,
+        "events": 83.888,
+        "hid_spikes": 23.2648,
+        "cycles": 326531.21199999994
+      },
+      {
+        "margin": 744,
+        "margin_k": 8,
+        "acc": 0.9784,
+        "steps": 2.5538,
+        "events": 87.8126,
+        "hid_spikes": 27.9202,
+        "cycles": 347393.068
+      },
+      {
+        "margin": 1488,
+        "margin_k": 16,
+        "acc": 0.9784,
+        "steps": 5.7472,
+        "events": 92.744,
+        "hid_spikes": 36.056,
+        "cycles": 383371.168
+      },
+      {
+        "margin": 2976,
+        "margin_k": 32,
+        "acc": 0.9784,
+        "steps": 6.0,
+        "events": 92.7558,
+        "hid_spikes": 36.2796,
+        "cycles": 384793.963
+      },
+      {
+        "margin": 5952,
+        "margin_k": 64,
+        "acc": 0.9784,
+        "steps": 6.0,
+        "events": 92.7558,
+        "hid_spikes": 36.2796,
+        "cycles": 384793.963
+      }
+    ],
+    "T8_tin3_x96_lam1": [
+      {
+        "margin": null,
+        "margin_k": null,
+        "acc": 0.9828,
+        "steps": 8.0,
+        "events": 112.2622,
+        "hid_spikes": 44.1552,
+        "cycles": 467052.805
+      },
+      {
+        "margin": 43,
+        "margin_k": 0.5,
+        "acc": 0.9772,
+        "steps": 1.0252,
+        "events": 89.9596,
+        "hid_spikes": 24.7736,
+        "cycles": 346566.958
+      },
+      {
+        "margin": 86,
+        "margin_k": 1,
+        "acc": 0.9794,
+        "steps": 1.0718,
+        "events": 90.3254,
+        "hid_spikes": 25.0034,
+        "cycles": 348169.192
+      },
+      {
+        "margin": 172,
+        "margin_k": 2,
+        "acc": 0.9814,
+        "steps": 1.2146,
+        "events": 91.0476,
+        "hid_spikes": 25.4702,
+        "cycles": 351605.515
+      },
+      {
+        "margin": 344,
+        "margin_k": 4,
+        "acc": 0.9828,
+        "steps": 1.5354,
+        "events": 92.8668,
+        "hid_spikes": 26.6612,
+        "cycles": 360055.77999999997
+      },
+      {
+        "margin": 688,
+        "margin_k": 8,
+        "acc": 0.9828,
+        "steps": 2.896,
+        "events": 102.1344,
+        "hid_spikes": 33.2588,
+        "cycles": 401714.43399999995
+      },
+      {
+        "margin": 1376,
+        "margin_k": 16,
+        "acc": 0.9828,
+        "steps": 7.5664,
+        "events": 112.2576,
+        "hid_spikes": 43.8652,
+        "cycles": 464681.602
+      },
+      {
+        "margin": 2752,
+        "margin_k": 32,
+        "acc": 0.9828,
+        "steps": 8.0,
+        "events": 112.2622,
+        "hid_spikes": 44.1552,
+        "cycles": 467052.805
+      },
+      {
+        "margin": 5504,
+        "margin_k": 64,
+        "acc": 0.9828,
+        "steps": 8.0,
+        "events": 112.2622,
+        "hid_spikes": 44.1552,
+        "cycles": 467052.805
+      }
+    ],
+    "T8_tin3_x128_lam1": [
+      {
+        "margin": null,
+        "margin_k": null,
+        "acc": 0.9798,
+        "steps": 8.0,
+        "events": 103.1848,
+        "hid_spikes": 42.6646,
+        "cycles": 434036.773
+      },
+      {
+        "margin": 50,
+        "margin_k": 0.5,
+        "acc": 0.977,
+        "steps": 1.0346,
+        "events": 89.9212,
+        "hid_spikes": 24.5856,
+        "cycles": 346452.958
+      },
+      {
+        "margin": 99,
+        "margin_k": 1,
+        "acc": 0.978,
+        "steps": 1.098,
+        "events": 90.1004,
+        "hid_spikes": 24.7604,
+        "cycles": 347462.92
+      },
+      {
+        "margin": 198,
+        "margin_k": 2,
+        "acc": 0.9794,
+        "steps": 1.2528,
+        "events": 90.5214,
+        "hid_spikes": 25.2012,
+        "cycles": 349870.975
+      },
+      {
+        "margin": 396,
+        "margin_k": 4,
+        "acc": 0.9798,
+        "steps": 1.6434,
+        "events": 91.9742,
+        "hid_spikes": 26.699,
+        "cycles": 357410.85400000005
+      },
+      {
+        "margin": 792,
+        "margin_k": 8,
+        "acc": 0.9798,
+        "steps": 3.7294,
+        "events": 99.3834,
+        "hid_spikes": 35.301,
+        "cycles": 396495.622
+      },
+      {
+        "margin": 1584,
+        "margin_k": 16,
+        "acc": 0.9798,
+        "steps": 7.9216,
+        "events": 103.1848,
+        "hid_spikes": 42.6296,
+        "cycles": 433613.39199999993
+      },
+      {
+        "margin": 3168,
+        "margin_k": 32,
+        "acc": 0.9798,
+        "steps": 8.0,
+        "events": 103.1848,
+        "hid_spikes": 42.6646,
+        "cycles": 434036.773
+      },
+      {
+        "margin": 6336,
+        "margin_k": 64,
+        "acc": 0.9798,
+        "steps": 8.0,
+        "events": 103.1848,
+        "hid_spikes": 42.6646,
+        "cycles": 434036.773
+      }
+    ],
+    "T8_tin3_x160_lam1": [
+      {
+        "margin": null,
+        "margin_k": null,
+        "acc": 0.977,
+        "steps": 8.0,
+        "events": 92.7558,
+        "hid_spikes": 43.9188,
+        "cycles": 396505.255
+      },
+      {
+        "margin": 48,
+        "margin_k": 0.5,
+        "acc": 0.9752,
+        "steps": 1.0322,
+        "events": 89.7236,
+        "hid_spikes": 26.9952,
+        "cycles": 346051.114
+      },
+      {
+        "margin": 95,
+        "margin_k": 1,
+        "acc": 0.9752,
+        "steps": 1.103,
+        "events": 89.773,
+        "hid_spikes": 27.189,
+        "cycles": 346633.92999999993
+      },
+      {
+        "margin": 190,
+        "margin_k": 2,
+        "acc": 0.9762,
+        "steps": 1.2658,
+        "events": 89.875,
+        "hid_spikes": 27.5628,
+        "cycles": 347922.47500000003
+      },
+      {
+        "margin": 380,
+        "margin_k": 4,
+        "acc": 0.9768,
+        "steps": 1.6668,
+        "events": 90.1606,
+        "hid_spikes": 28.731,
+        "cycles": 351253.966
+      },
+      {
+        "margin": 760,
+        "margin_k": 8,
+        "acc": 0.977,
+        "steps": 3.47,
+        "events": 91.5498,
+        "hid_spikes": 35.2902,
+        "cycles": 366790.504
+      },
+      {
+        "margin": 1520,
+        "margin_k": 16,
+        "acc": 0.977,
+        "steps": 7.8526,
+        "events": 92.7558,
+        "hid_spikes": 43.822,
+        "cycles": 395705.071
+      },
+      {
+        "margin": 3040,
+        "margin_k": 32,
+        "acc": 0.977,
+        "steps": 8.0,
+        "events": 92.7558,
+        "hid_spikes": 43.9188,
+        "cycles": 396505.255
+      },
+      {
+        "margin": 6080,
+        "margin_k": 64,
+        "acc": 0.977,
+        "steps": 8.0,
+        "events": 92.7558,
+        "hid_spikes": 43.9188,
+        "cycles": 396505.255
+      }
+    ],
+    "T8_tin4_x96_lam1": [
+      {
+        "margin": null,
+        "margin_k": null,
+        "acc": 0.9822,
+        "steps": 8.0,
+        "events": 112.2622,
+        "hid_spikes": 43.102,
+        "cycles": 466910.623
+      },
+      {
+        "margin": 44,
+        "margin_k": 0.5,
+        "acc": 0.9748,
+        "steps": 1.026,
+        "events": 82.7802,
+        "hid_spikes": 22.6752,
+        "cycles": 320334.4149999999
+      },
+      {
+        "margin": 88,
+        "margin_k": 1,
+        "acc": 0.9776,
+        "steps": 1.079,
+        "events": 83.1816,
+        "hid_spikes": 22.9132,
+        "cycles": 322100.62600000005
+      },
+      {
+        "margin": 176,
+        "margin_k": 2,
+        "acc": 0.98,
+        "steps": 1.199,
+        "events": 83.9766,
+        "hid_spikes": 23.3854,
+        "cycles": 325679.09800000006
+      },
+      {
+        "margin": 352,
+        "margin_k": 4,
+        "acc": 0.982,
+        "steps": 1.4856,
+        "events": 86.098,
+        "hid_spikes": 24.5914,
+        "cycles": 335041.213
+      },
+      {
+        "margin": 704,
+        "margin_k": 8,
+        "acc": 0.9822,
+        "steps": 2.6364,
+        "events": 95.1294,
+        "hid_spikes": 30.3298,
+        "cycles": 374609.68000000005
+      },
+      {
+        "margin": 1408,
+        "margin_k": 16,
+        "acc": 0.9822,
+        "steps": 7.2386,
+        "events": 111.863,
+        "hid_spikes": 42.507,
+        "cycles": 461321.31399999995
+      },
+      {
+        "margin": 2816,
+        "margin_k": 32,
+        "acc": 0.9822,
+        "steps": 8.0,
+        "events": 112.2622,
+        "hid_spikes": 43.102,
+        "cycles": 466910.623
+      },
+      {
+        "margin": 5632,
+        "margin_k": 64,
+        "acc": 0.9822,
+        "steps": 8.0,
+        "events": 112.2622,
+        "hid_spikes": 43.102,
+        "cycles": 466910.623
+      }
+    ],
+    "T8_tin4_x128_lam1": [
+      {
+        "margin": null,
+        "margin_k": null,
+        "acc": 0.9776,
+        "steps": 8.0,
+        "events": 103.1848,
+        "hid_spikes": 43.1002,
+        "cycles": 434095.57899999997
+      },
+      {
+        "margin": 45,
+        "margin_k": 0.5,
+        "acc": 0.973,
+        "steps": 1.0332,
+        "events": 82.7902,
+        "hid_spikes": 24.459,
+        "cycles": 320649.826
+      },
+      {
+        "margin": 90,
+        "margin_k": 1,
+        "acc": 0.9742,
+        "steps": 1.0906,
+        "events": 83.1276,
+        "hid_spikes": 24.6884,
+        "cycles": 322207.012
+      },
+      {
+        "margin": 180,
+        "margin_k": 2,
+        "acc": 0.9768,
+        "steps": 1.2178,
+        "events": 83.7044,
+        "hid_spikes": 25.0744,
+        "cycles": 325023.50200000004
+      },
+      {
+        "margin": 360,
+        "margin_k": 4,
+        "acc": 0.9776,
+        "steps": 1.5276,
+        "events": 85.2744,
+        "hid_spikes": 26.1844,
+        "cycles": 332503.234
+      },
+      {
+        "margin": 720,
+        "margin_k": 8,
+        "acc": 0.9776,
+        "steps": 2.8384,
+        "events": 93.1326,
+        "hid_spikes": 32.0604,
+        "cycles": 368703.559
+      },
+      {
+        "margin": 1440,
+        "margin_k": 16,
+        "acc": 0.9776,
+        "steps": 7.4086,
+        "events": 103.1268,
+        "hid_spikes": 42.6104,
+        "cycles": 430661.70999999996
+      },
+      {
+        "margin": 2880,
+        "margin_k": 32,
+        "acc": 0.9776,
+        "steps": 8.0,
+        "events": 103.1848,
+        "hid_spikes": 43.1002,
+        "cycles": 434095.57899999997
+      },
+      {
+        "margin": 5760,
+        "margin_k": 64,
+        "acc": 0.9776,
+        "steps": 8.0,
+        "events": 103.1848,
+        "hid_spikes": 43.1002,
+        "cycles": 434095.57899999997
+      }
+    ],
+    "T8_tin4_x160_lam1": [
+      {
+        "margin": null,
+        "margin_k": null,
+        "acc": 0.9778,
+        "steps": 8.0,
+        "events": 92.7558,
+        "hid_spikes": 42.408,
+        "cycles": 396301.297
+      },
+      {
+        "margin": 47,
+        "margin_k": 0.5,
+        "acc": 0.9748,
+        "steps": 1.0336,
+        "events": 82.6174,
+        "hid_spikes": 25.2644,
+        "cycles": 320136.019
+      },
+      {
+        "margin": 94,
+        "margin_k": 1,
+        "acc": 0.9756,
+        "steps": 1.1096,
+        "events": 82.787,
+        "hid_spikes": 25.4728,
+        "cycles": 321183.097
+      },
+      {
+        "margin": 188,
+        "margin_k": 2,
+        "acc": 0.9774,
+        "steps": 1.2678,
+        "events": 83.1348,
+        "hid_spikes": 25.9192,
+        "cycles": 323345.446
+      },
+      {
+        "margin": 376,
+        "margin_k": 4,
+        "acc": 0.9778,
+        "steps": 1.6386,
+        "events": 84.0754,
+        "hid_spikes": 27.155,
+        "cycles": 328892.62
+      },
+      {
+        "margin": 752,
+        "margin_k": 8,
+        "acc": 0.9778,
+        "steps": 3.3504,
+        "events": 88.8232,
+        "hid_spikes": 33.817,
+        "cycles": 356096.299
+      },
+      {
+        "margin": 1504,
+        "margin_k": 16,
+        "acc": 0.9778,
+        "steps": 7.775,
+        "events": 92.7534,
+        "hid_spikes": 42.2688,
+        "cycles": 395072.32899999997
+      },
+      {
+        "margin": 3008,
+        "margin_k": 32,
+        "acc": 0.9778,
+        "steps": 8.0,
+        "events": 92.7558,
+        "hid_spikes": 42.408,
+        "cycles": 396301.297
+      },
+      {
+        "margin": 6016,
+        "margin_k": 64,
+        "acc": 0.9778,
+        "steps": 8.0,
+        "events": 92.7558,
+        "hid_spikes": 42.408,
+        "cycles": 396301.297
+      }
+    ]
+  },
+  "chosen": {
+    "name": "T8_tin4_x96_lam1",
+    "cfg": {
+      "T": 8,
+      "tin": 4,
+      "xmin": 96,
+      "lam": 1.0
+    },
+    "score": {
+      "margin": 352,
+      "margin_k": 4,
+      "acc": 0.982,
+      "steps": 1.4856,
+      "events": 86.098,
+      "hid_spikes": 24.5914,
+      "cycles": 335041.213
+    }
+  }
+}

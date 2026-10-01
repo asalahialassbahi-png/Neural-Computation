@@ -23,6 +23,26 @@
     "snn_Tr": 1.0537133333333333
   },
   "snn_poisson_theta_q": 73,
+  "snn_fast_float_acc": NaN,
+  "snn_fast_int_acc_no_exit": 0.9803,
+  "snn_fast_int_acc": 0.9798,
+  "snn_fast_params": {
+    "T": 8,
+    "t_in": 3,
+    "x_min": 96,
+    "k_beta": 3,
+    "theta": 86,
+    "exit_margin": 258,
+    "n_min": 1
+  },
+  "snn_fast_ops": {
+    "mean_steps": 1.3787,
+    "in_AC": 28218.69,
+    "in_events": 94.0623,
+    "hid_spikes": 26.3408,
+    "hid_AC": 263.408,
+    "neuron_updates": 427.397
+  },
   "ann_ops": {
     "ann_dense_MAC": 238200,
     "ann_skip_MAC": 48336.57

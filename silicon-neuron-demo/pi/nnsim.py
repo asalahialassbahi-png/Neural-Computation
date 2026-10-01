@@ -19,16 +19,59 @@ class Bundle:
         self.H, self.T = c["N_HID"], c["T_STEPS"]
         self.ka, self.kb = c["K_ALPHA"], c["K_BETA"]
         self.has_poisson = "snn_poisson_W1" in z.files
+        self.has_fast = "snn_fast_W1" in z.files
 
     # ------------------------------------------------------------ ANN
-    def ann(self, x):
+    def ann(self, x, full=False):
         z, c = self.z, self.cfg
         acc = x.astype(np.int64) @ z["ann_W1"].astype(np.int64) + z["ann_b1"]
         sh = c["ANN_REQUANT_SHIFT"]
         h = np.clip((acc * int(z["ann_M"]) + (1 << (sh - 1))) >> sh, 0, 255)
         h = np.where(acc > 0, h, 0)
         out = h @ z["ann_W2"].astype(np.int64) + z["ann_b2"]
+        if full:
+            return int(out.argmax()), h, out, acc
         return int(out.argmax()), h
+
+    # ------------------------------------------------------------ SNN-E
+    def fast_params(self):
+        z = self.z
+        return {k: int(z["snn_fast_" + k]) for k in ("T", "t_in", "x_min", "k_beta", "theta", "exit_margin", "n_min")}
+
+    def snn_fast(self, x, exit=True):
+        """SNN-E exactly as snn_fast_infer() runs it, with everything the display needs:
+        raster (T,H), membrane (T,H) after input, evidence c per step, the step it exited."""
+        z = self.z
+        P = self.fast_params()
+        W1 = z["snn_fast_W1"].astype(np.int32); W2 = z["snn_fast_W2"].astype(np.int32)
+        H, T, kb, th = W1.shape[1], P["T"], P["k_beta"], P["theta"]
+        xi = x.astype(np.int32)
+        t_in = np.where(xi >= P["x_min"], ((255 - xi) * P["t_in"]) >> 8, 255).astype(np.uint8)
+        U = np.zeros(H, np.int32); S = np.zeros(H, bool)
+        U2 = np.zeros(10, np.int32); c = np.zeros(10, np.int64)
+        raster = np.zeros((T, H), bool); u_all = np.zeros((T, H), np.int64)
+        c_hist = np.zeros((T, 10), np.int64)
+        steps, events = T, 0
+        for n in range(T):
+            U = U - (U >> kb) - th * S
+            inp = t_in == n
+            events += int(inp.sum())
+            U = U + inp.astype(np.int32) @ W1
+            S = U >= th
+            raster[n], u_all[n] = S, U
+            U2 = U2 - (U2 >> kb) + S.astype(np.int32) @ W2
+            c += U2
+            c_hist[n] = c
+            if exit and P["exit_margin"] >= 0 and n + 1 >= P["n_min"] and n < T - 1:
+                top = np.sort(c)
+                if top[-1] - top[-2] >= P["exit_margin"] * (n + 1):
+                    steps = n + 1
+                    break
+        pick = self.pick_neurons(raster[:steps], u_all[:steps])
+        return {"pred": int(c.argmax()), "c": c, "raster": raster[:steps], "u": u_all[:steps, pick],
+                "u_all": u_all[:steps], "in_time": t_in, "theta": th, "c_hist": c_hist[:steps],
+                "spikes": int(raster[:steps].sum()), "trace_idx": pick, "in_spikes": events,
+                "steps": steps, "T": T}
 
     # ------------------------------------------------------------ SNN
     def latency_times(self, x):
@@ -72,10 +115,10 @@ class Bundle:
         pick = self.pick_neurons(raster, u_all)
         u = u_all[:, pick]
         c_hist, c = self.output_from_raster(raster, enc)
-        return {"pred": int(c.argmax()), "c": c, "raster": raster, "u": u,
+        return {"pred": int(c.argmax()), "c": c, "raster": raster, "u": u, "u_all": u_all,
                 "in_time": self.latency_times(x) if enc == "latency" else np.full(784, 255, np.uint8),
                 "theta": th, "c_hist": c_hist, "spikes": int(raster.sum()),
-                "trace_idx": pick, "in_spikes": int(s_in.sum())}
+                "trace_idx": pick, "in_spikes": int(s_in.sum()), "s_in": s_in, "steps": T, "T": T}
 
     @staticmethod
     def pick_neurons(raster, u_all):

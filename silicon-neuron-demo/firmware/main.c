@@ -10,6 +10,9 @@
 //   B <m> <start> <count> -> R <m> <count> <us> <correct> <spikes>
 //        m = A  ANN dense         Z  ANN zero-skip
 //            L  SNN latency code  P  SNN Poisson code
+//            E  SNN-E: Pico-optimised spiking network (first-order LIF, early exit);
+//               then <spikes> is the hidden spike total and a 6th field is the
+//               total number of time steps run
 //            I  idle busy-wait for <count> microseconds (baseline)
 //   T <idx>               -> TI/TS/TU/TO/TA lines then END   (not measured)
 //   C <khz>               -> OK <khz>   change system clock (e.g. 48000..200000)
@@ -31,7 +34,7 @@
 
 static void do_bench(char mode, uint32_t start, uint32_t count)
 {
-    uint32_t correct = 0, spikes_total = 0;
+    uint32_t correct = 0, spikes_total = 0, steps_total = 0;
 #ifdef LED_PIN
     gpio_put(LED_PIN, 0);                    // LED must not add current to the window
 #endif
@@ -54,6 +57,14 @@ static void do_bench(char mode, uint32_t start, uint32_t count)
             case 'A': pred = ann_infer(x, 0, NULL); break;
             case 'Z': pred = ann_infer(x, 1, NULL); break;
             case 'L': pred = snn_infer(x, ENC_LATENCY, idx, &sp, NULL, NULL); break;
+#if HAS_FAST
+            case 'E': {
+                uint32_t st = 0;
+                pred = snn_fast_infer(x, FAST_EXIT_MARGIN, &sp, &st, NULL);
+                steps_total += st;
+                break;
+            }
+#endif
             default:  pred = snn_infer(x, ENC_POISSON, idx, &sp, NULL, NULL); break;
             }
             correct += (pred == test_labels[idx]);
@@ -63,8 +74,9 @@ static void do_bench(char mode, uint32_t start, uint32_t count)
     uint64_t dt = time_us_64() - t0;
     gpio_put(MARKER_PIN, 0);
 
-    printf("R %c %lu %llu %lu %lu\n", mode, (unsigned long)count,
-           (unsigned long long)dt, (unsigned long)correct, (unsigned long)spikes_total);
+    printf("R %c %lu %llu %lu %lu %lu\n", mode, (unsigned long)count,
+           (unsigned long long)dt, (unsigned long)correct, (unsigned long)spikes_total,
+           (unsigned long)steps_total);
 }
 
 static void do_trace(uint32_t idx)
@@ -103,10 +115,11 @@ int main(void)
         char m = 0;
         unsigned long a = 0, b = 0;
         if (line[0] == '?') {
-            printf("INFO H=%d T=%d NTEST=%d POISSON=%d CLK=%lu\n", N_HID, T_STEPS, N_TEST,
-                   HAS_POISSON, (unsigned long)clock_get_hz(clk_sys));
+            printf("INFO H=%d T=%d NTEST=%d POISSON=%d FAST=%d CLK=%lu\n", N_HID, T_STEPS, N_TEST,
+                   HAS_POISSON, HAS_FAST, (unsigned long)clock_get_hz(clk_sys));
         } else if (sscanf(line, "B %c %lu %lu", &m, &a, &b) == 3) {
             if (m == 'P' && !HAS_POISSON) printf("ERR no poisson model\n");
+            else if (m == 'E' && !HAS_FAST) printf("ERR no SNN-E model\n");
             else do_bench(m, a, b);
         } else if (sscanf(line, "T %lu", &a) == 1) {
             do_trace(a);

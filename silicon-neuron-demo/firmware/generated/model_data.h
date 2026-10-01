@@ -16,6 +16,15 @@
 #define ANN_M     16598
 #define HAS_POISSON 1
 
+#define HAS_FAST  1
+#define FAST_T    8
+#define FAST_T_IN 3
+#define FAST_X_MIN 96
+#define FAST_K_BETA 3
+#define FAST_THETA 86
+#define FAST_EXIT_MARGIN 258
+#define FAST_N_MIN 1
+
 #define SNN_LAT_THETA 65
 #define SNN_POI_THETA 73
 
@@ -26,6 +35,8 @@ extern const int8_t  ann_W2[N_HID * N_OUT];
 extern const int32_t ann_b2[N_OUT];
 extern const int8_t  snn_lat_W1[N_IN * N_HID];
 extern const int8_t  snn_lat_W2[N_HID * N_OUT];
+extern const int8_t  fast_W1[];
+extern const int8_t  fast_W2[];
 extern const int8_t  snn_poi_W1[];
 extern const int8_t  snn_poi_W2[];
 extern const uint8_t test_images[N_TEST * N_IN];

@@ -4,3 +4,6 @@ silicon-neuron-demo/blender/renders/preview/
 __pycache__/
 *.blend1
 silicon-neuron-demo/blender/renders/ghost_quads.json
+silicon-neuron-demo/training/weights/sweep/*.npz
+silicon-neuron-demo/firmware/host_test/host_test
+__pycache__/

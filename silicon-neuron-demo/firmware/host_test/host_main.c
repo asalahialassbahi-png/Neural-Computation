@@ -32,6 +32,17 @@ int main(int argc, char **argv)
         for (int k = 0; k < N_OUT; k++) printf(" %ld", (long)c[k]);
         printf("\n");
 
+#if HAS_FAST
+        uint32_t st;
+        int pe = snn_fast_infer(x, -1, &sp, &st, c);           // no exit: all FAST_T steps
+        printf("F %d %d %lu %lu", idx, pe, (unsigned long)sp, (unsigned long)st);
+        for (int k = 0; k < N_OUT; k++) printf(" %ld", (long)c[k]);
+        printf("\n");
+        pe = snn_fast_infer(x, FAST_EXIT_MARGIN, &sp, &st, c);  // as deployed
+        printf("E %d %d %lu %lu", idx, pe, (unsigned long)sp, (unsigned long)st);
+        for (int k = 0; k < N_OUT; k++) printf(" %ld", (long)c[k]);
+        printf("\n");
+#endif
 #if HAS_POISSON
         int pp = snn_infer(x, ENC_POISSON, idx, &sp, c, NULL);
         printf("P %d %d %lu", idx, pp, (unsigned long)sp);

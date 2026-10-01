@@ -140,3 +140,62 @@ def op_counts(x_u8, S_in, S_hid, H=C.N_HID):
         "snn_neuron_updates": C.T_STEPS * (H + C.N_OUT),
         "snn_Tr": float(S_hid.mean() * C.T_STEPS),
     }
+
+
+# ============================================ SNN-E: the Pico-optimised SNN (int)
+def quantise_snn_fast(p):
+    """SNN-E: first-order LIF (no synaptic current), its own T / latency code,
+    trained with the per-step readout. Same int8 weight quantisation."""
+    q = quantise_snn(p)
+    q.update(T=int(p["T"]), t_in=int(p["t_in"]), x_min=int(p["x_min"]), k_beta=int(p["k_beta"]))
+    return q
+
+
+def snn_fast_int(q, x_u8, exit_margin=None, n_min=1):
+    """Integer SNN-E with early exit, bit-exact with snn_fast_infer() in nn_core.c.
+
+    Per step n (all integer, shifts only):
+        U <- U - (U >> k_beta) - theta * S_prev       (leak, then reset by subtraction)
+        U <- U + sum of W1 rows of the pixels spiking at n
+        S  = [U >= theta]
+        U2 <- U2 - (U2 >> k_beta) + sum of W2 rows of the hidden spikes
+        c  <- c + U2                                   (cumulative evidence)
+    Early exit after step n (n + 1 >= n_min):  stop when
+        c_best - c_second >= exit_margin * (n + 1)
+    i.e. when the mean output margin so far reaches exit_margin.
+
+    Returns pred, c, and per-inference counts: steps used, input events
+    processed, hidden spikes, so the operation count is exact.
+    """
+    B = x_u8.shape[0]
+    T, kb, th = q["T"], q["k_beta"], np.int32(q["theta"])
+    t = latency_times(x_u8, q["t_in"], q["x_min"])
+    W1 = q["W1"].astype(np.int32); W2 = q["W2"].astype(np.int32)
+    H = W1.shape[1]
+    U1 = np.zeros((B, H), np.int32); S1 = np.zeros((B, H), bool)
+    U2 = np.zeros((B, C.N_OUT), np.int32); c = np.zeros((B, C.N_OUT), np.int32)
+    active = np.ones(B, bool)
+    steps = np.full(B, T, np.int32)
+    events = np.zeros(B, np.int64); hid = np.zeros(B, np.int64)
+    for n in range(T):
+        a = np.nonzero(active)[0]
+        if len(a) == 0:
+            break
+        inp = t[a] == n
+        events[a] += inp.sum(1)
+        U = U1[a]
+        U = U - (U >> kb) - th * S1[a]
+        U = U + inp.astype(np.int32) @ W1
+        S = U >= th
+        U1[a], S1[a] = U, S
+        hid[a] += S.sum(1)
+        V = U2[a]
+        V = V - (V >> kb) + S.astype(np.int32) @ W2
+        U2[a] = V
+        c[a] += V
+        if exit_margin is not None and n + 1 >= n_min and n < T - 1:
+            top = np.sort(c[a], 1).astype(np.int64)        # int64: c_best - c_second cannot wrap
+            done = (top[:, -1] - top[:, -2]) >= exit_margin * (n + 1)
+            steps[a[done]] = n + 1
+            active[a[done]] = False
+    return c.argmax(1), c, {"steps": steps, "events": events, "hid_spikes": hid}

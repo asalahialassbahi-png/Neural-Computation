@@ -84,9 +84,9 @@ class PicoLink:
         ln = self._cmd(f"B {mode} {start} {count}", lambda l: l.startswith(("R ", "ERR")))[-1]
         if ln.startswith("ERR"):
             raise RuntimeError(ln)
-        _, m, n, us, correct, spikes = ln.split()
-        return {"mode": m, "count": int(n), "us": int(us), "correct": int(correct),
-                "spikes": int(spikes)}
+        f = ln.split()                      # R m count us correct spikes [steps]
+        return {"mode": f[1], "count": int(f[2]), "us": int(f[3]), "correct": int(f[4]),
+                "spikes": int(f[5]), "steps": int(f[6]) if len(f) > 6 else 0}
 
     def trace(self, idx):
         lines = self._cmd(f"T {idx}", lambda l: l == "END")
@@ -97,8 +97,8 @@ class SimLink:
     """Behaves like PicoLink using the NumPy integer model and a crude timing /
     power model (only for developing the display without hardware).
     ITS ENERGY NUMBERS ARE MADE UP — never quote them; only the Pico measures."""
-    US_PER_OP = {"A": 0.045, "Z": 0.050, "L": 0.055, "P": 0.080}   # rough RP2040 guesses
-    LOAD_W = {"A": 0.0120, "Z": 0.0115, "L": 0.0105, "P": 0.0110, "I": 0.0}
+    US_PER_OP = {"A": 0.045, "Z": 0.050, "L": 0.055, "P": 0.080, "E": 0.050}   # rough RP2040 guesses
+    LOAD_W = {"A": 0.0120, "Z": 0.0115, "L": 0.0105, "P": 0.0110, "E": 0.0105, "I": 0.0}
 
     def __init__(self, bundle):
         self.bundle = bundle
@@ -126,7 +126,12 @@ class SimLink:
             for k in range(count):
                 idx = (start + k) % len(b.labels)
                 x = b.images[idx]
-                if mode in "AZ":
+                if mode == "E":
+                    r = b.snn_fast(x)
+                    p, s = r["pred"], r["spikes"]
+                    spikes += s
+                    ops += r["in_spikes"] * b.H + s * 10 + r["steps"] * (b.H + 10) * 2
+                elif mode in "AZ":
                     p, h = b.ann(x)
                     ops += 784 * b.H + b.H * 10 if mode == "A" else (x > 0).sum() * b.H + (h > 0).sum() * 10
                 else:

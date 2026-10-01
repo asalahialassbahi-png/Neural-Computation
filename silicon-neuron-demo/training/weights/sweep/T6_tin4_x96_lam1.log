@@ -1,0 +1,11 @@
+epoch  1/10  loss 0.3221  val acc 96.58%  mean rate r = 0.0416 spikes/neuron/step  T*r = 0.250  (10s)
+epoch  2/10  loss 0.1344  val acc 97.14%  mean rate r = 0.0342 spikes/neuron/step  T*r = 0.205  (11s)
+epoch  3/10  loss 0.0909  val acc 97.46%  mean rate r = 0.0313 spikes/neuron/step  T*r = 0.188  (10s)
+epoch  4/10  loss 0.0665  val acc 97.68%  mean rate r = 0.0277 spikes/neuron/step  T*r = 0.166  (12s)
+epoch  5/10  loss 0.0508  val acc 97.94%  mean rate r = 0.0257 spikes/neuron/step  T*r = 0.154  (14s)
+epoch  6/10  loss 0.0420  val acc 97.98%  mean rate r = 0.0247 spikes/neuron/step  T*r = 0.148  (11s)
+epoch  7/10  loss 0.0326  val acc 97.86%  mean rate r = 0.0220 spikes/neuron/step  T*r = 0.132  (10s)
+epoch  8/10  loss 0.0210  val acc 97.98%  mean rate r = 0.0214 spikes/neuron/step  T*r = 0.129  (12s)
+epoch  9/10  loss 0.0160  val acc 98.10%  mean rate r = 0.0206 spikes/neuron/step  T*r = 0.124  (11s)
+epoch 10/10  loss 0.0135  val acc 98.18%  mean rate r = 0.0196 spikes/neuron/step  T*r = 0.118  (10s)
+saved /home/user/Neural-Computation/silicon-neuron-demo/training/weights/sweep/T6_tin4_x96_lam1.npz

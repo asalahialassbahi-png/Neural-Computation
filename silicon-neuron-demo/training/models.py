@@ -1,7 +1,8 @@
 """
 ANN and SNN in plain NumPy with hand-written backward passes.
 
-The SNN backward pass is exactly the BPTT recursion on the formula sheet:
+The SNN backward pass is exactly the BPTT recursion on the formula sheet
+(derivation: docs/MATHS.md, sections 3-5):
 
     eps[n] = sigma'(U[n] - theta) * (g_S[n] - theta * eps[n+1]) + beta * eps[n+1]
     psi[n] = eps[n] + alpha * psi[n+1]
@@ -93,17 +94,28 @@ class SNN:
     Output layer (non-spiking leaky integrator):
         I2[n] = alpha I2[n-1] + S[n] W2
         U2[n] = beta  U2[n-1] + I2[n]
-        logits = (1/T) sum_n U2[n]
+        c[n]  = sum_{k<=n} U2[k]                        (cumulative evidence)
+        logits = c[T-1] / T
+
+    readout = "mean":    L = CE(c[T-1] / T)                 (answer at the end)
+    readout = "perstep": L = (1/T) sum_n CE(c[n] / (n+1))   (a good answer at EVERY
+              step, so inference can stop as soon as it is confident: early exit)
+    The only change in the backward pass is the direct gradient into U2:
+        dL/dc[n]  = (softmax(z_n) - onehot(y)) / (B T (n+1))
+        dL/dU2[k] = sum_{n>=k} dL/dc[n]                  (a reverse cumulative sum)
     """
 
     def __init__(self, rng, n_hid=N_HID, init_rate=0.02, dtype=np.float32,
-                 spike_mode="hard", sig_k=100.0):
+                 spike_mode="hard", sig_k=100.0, readout="mean", alpha=ALPHA, beta=BETA):
         # sigma = theta / sqrt(n_in * p) gives std(U) ~ theta   (formula sheet)
         s1 = THETA / np.sqrt(N_IN * init_rate)
         s2 = THETA / np.sqrt(n_hid * 0.1)
         self.p = {"W1": rng.normal(0, s1 * 0.5, (N_IN, n_hid)).astype(dtype),
                   "W2": rng.normal(0, s2 * 0.5, (n_hid, N_OUT)).astype(dtype)}
-        self.spike_mode, self.sig_k = spike_mode, sig_k
+        self.spike_mode, self.sig_k, self.readout = spike_mode, sig_k, readout
+        # alpha = 0 removes the synaptic filter: I[n] = S_in[n] W, a first-order LIF
+        # (one state variable per neuron, the cheapest neuron a microcontroller can run)
+        self.alpha, self.beta = alpha, beta
 
     def _spike(self, u):
         if self.spike_mode == "hard":
@@ -125,17 +137,27 @@ class SNN:
         I2 = np.zeros((B, N_OUT), dt); U2 = np.zeros((B, N_OUT), dt)
         csum = np.zeros((B, N_OUT), dt)
         U_hist = np.empty((B, T, H), dt); S_hist = np.empty((B, T, H), dt)
+        C_hist = np.empty((B, T, N_OUT), dt)
         drive = (s_in.reshape(B * T, -1) @ W1).reshape(B, T, H)   # one big matmul
         for n in range(T):
-            I1 = ALPHA * I1 + drive[:, n]
-            U1 = BETA * U1 + I1 - THETA * S1
+            I1 = self.alpha * I1 + drive[:, n]
+            U1 = self.beta * U1 + I1 - THETA * S1
             S1 = self._spike(U1 - THETA)
             U_hist[:, n], S_hist[:, n] = U1, S1
-            I2 = ALPHA * I2 + S1 @ W2
-            U2 = BETA * U2 + I2
+            I2 = self.alpha * I2 + S1 @ W2
+            U2 = self.beta * U2 + I2
             csum += U2
+            C_hist[:, n] = csum
         self.cache = (s_in, U_hist, S_hist)
+        self.step_logits = C_hist / np.arange(1, T + 1, dtype=dt)[None, :, None]   # z_n = c[n]/(n+1)
         return csum / T, S_hist
+
+    def loss(self, logits, y):
+        """The training loss for this readout (call after forward)."""
+        if self.readout == "mean":
+            return cross_entropy_logits(logits, y)
+        z = self.step_logits
+        return float(np.mean([cross_entropy_logits(z[:, n], y) for n in range(z.shape[1])]))
 
     def backward(self, logits, y, lam=0.0):
         """BPTT. lam weights the firing-rate regulariser  lam * mean(S)."""
@@ -143,28 +165,37 @@ class SNN:
         W1, W2 = self.p["W1"], self.p["W2"]
         B, T, H = S_hist.shape
 
-        g = softmax(logits)
-        g[np.arange(B), y] -= 1
-        g /= B                                   # dL/dlogits
+        # ---- direct gradient into every U2[k] (see the class docstring)
+        dc = np.zeros((B, T, N_OUT), logits.dtype)          # dL/dc[n]
+        if self.readout == "mean":
+            g = softmax(logits)
+            g[np.arange(B), y] -= 1
+            dc[:, T - 1] = g / (B * T)                       # logits = c[T-1]/T
+        else:
+            for n in range(T):
+                g = softmax(self.step_logits[:, n])
+                g[np.arange(B), y] -= 1
+                dc[:, n] = g / (B * T * (n + 1))
+        dU2 = np.cumsum(dc[:, ::-1], axis=1)[:, ::-1]        # dL/dU2[k] = sum_{n>=k} dL/dc[n]
 
-        # ---- output layer: dL/dU2[n] = g/T  (directly, every step)
-        eps2 = np.zeros_like(g); psi2 = np.zeros_like(g)
-        psi2_hist = np.empty((B, T, N_OUT), g.dtype)
+        # ---- output layer BPTT
+        eps2 = np.zeros((B, N_OUT), logits.dtype); psi2 = np.zeros_like(eps2)
+        psi2_hist = np.empty((B, T, N_OUT), logits.dtype)
         for n in range(T - 1, -1, -1):
-            eps2 = g / T + BETA * eps2
-            psi2 = eps2 + ALPHA * psi2
+            eps2 = dU2[:, n] + self.beta * eps2
+            psi2 = eps2 + self.alpha * psi2
             psi2_hist[:, n] = psi2
         dW2 = S_hist.reshape(B * T, H).T @ psi2_hist.reshape(B * T, N_OUT)
         gS = (psi2_hist.reshape(B * T, N_OUT) @ W2.T).reshape(B, T, H)
         gS += lam / (B * T * H)                  # d(lam*mean S)/dS
 
         # ---- hidden layer BPTT (formula sheet recursion)
-        eps1 = np.zeros((B, H), g.dtype); psi1 = np.zeros((B, H), g.dtype)
-        psi1_hist = np.empty((B, T, H), g.dtype)
+        eps1 = np.zeros((B, H), logits.dtype); psi1 = np.zeros((B, H), logits.dtype)
+        psi1_hist = np.empty((B, T, H), logits.dtype)
         for n in range(T - 1, -1, -1):
             u = U_hist[:, n] - THETA
-            eps1 = self._dspike(u, S_hist[:, n]) * (gS[:, n] - THETA * eps1) + BETA * eps1
-            psi1 = eps1 + ALPHA * psi1
+            eps1 = self._dspike(u, S_hist[:, n]) * (gS[:, n] - THETA * eps1) + self.beta * eps1
+            psi1 = eps1 + self.alpha * psi1
             psi1_hist[:, n] = psi1
         dW1 = s_in.reshape(B * T, -1).T @ psi1_hist.reshape(B * T, H)
         return {"W1": dW1, "W2": dW2}

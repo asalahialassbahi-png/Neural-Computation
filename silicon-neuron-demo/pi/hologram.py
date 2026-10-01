@@ -1,286 +1,174 @@
 """
-Pepper's-ghost hologram display for the Silicon Neuron demo (Raspberry Pi).
+Pepper's-ghost hologram for the Silicon Neuron demo (Raspberry Pi Zero 2 W).
 
-    python hologram.py              # real Pico + INA226, fullscreen
-    python hologram.py --sim        # no hardware (laptop or Pi), windowed
-    python hologram.py --sim --snapshot out.png --snapshot-step 9   # render one frame
+    python3 hologram.py                 # real Pico + INA226, fullscreen
+    python3 hologram.py --sim           # no hardware: windowed, energy numbers SIMULATED
+    python3 hologram.py --sim --snapshot out.png --model E --view 0 --at 1.5
 
-The screen lies face-up under a 45-degree acrylic sheet. The viewer sees the
-screen's REFLECTION, which is a mirror image standing upright behind the
-sheet, so everything is drawn normally and then flipped left-right before it
-reaches the screen (--no-mirror turns that off for testing on a monitor).
-Black pixels emit no light and therefore vanish: only the bright lines and
-dots appear to float in mid-air. Keep the palette saturated and the lines thick.
+Five networks (zoo.py) and four visuals (views.py). Scroll the mouse wheel to
+change network, click it (or hold the arcade button) to change visual, press
+the arcade button for the next digit. Wiring and every key: controls.py.
+Left alone for 90 s it tours by itself.
 
-Keys: SPACE next digit · M toggle mirror · F toggle fullscreen · ESC quit
-Button: Pi GPIO27 to GND = next digit
+The screen lies face down above a 45-degree sheet; the viewer sees its mirror
+image, so the frame is drawn normally then flipped left-right (--no-mirror for
+a monitor). Black is invisible in the ghost: only light floats.
+
+Energy numbers come from the Pico: a worker thread benchmarks every network in
+turn (the current one most often) with the INA226, exactly as bench.py does.
+The animation itself is computed on the Pi by nnsim.py, which is bit-exact
+with the firmware, so the Pico is never interrupted while it is measured.
 """
 import argparse
 import collections
 import json
-import math
 import os
-import queue
 import threading
 import time
 
 import numpy as np
 
+import views as V
+import zoo
+from controls import Controls
+
 HERE = os.path.dirname(os.path.abspath(__file__))
-
 W, H = 1024, 600
-CYAN = (0, 225, 255)
-MAGENTA = (255, 60, 210)
-AMBER = (255, 185, 40)
-GREEN = (60, 255, 140)
-RED = (255, 80, 80)
-WHITE = (235, 245, 255)
-GREY = (70, 80, 95)
-STEP_S = 0.18          # seconds of animation per SNN time step
-HOLD_S = 3.0           # seconds the finished answer stays on screen
+TOUR_IDLE_S = 90
 
 
-def dim(c, f):
-    return tuple(int(v * f) for v in c)
+# ================================================================ energy worker
+class EnergyWorker(threading.Thread):
+    """Measures energy per inference of every network, current one first."""
 
-
-# ================================================================ worker
-class DemoWorker(threading.Thread):
-    """Talks to the Pico (or simulator) off the render thread:
-    fetch a trace, wait for the animation, run a short live benchmark."""
-
-    def __init__(self, link, sampler, bundle, live_target_s=0.3):
+    def __init__(self, link, sampler, codes, target_s=0.25):
         super().__init__(daemon=True)
-        self.link, self.sampler, self.bundle = link, sampler, bundle
-        self.traces = queue.Queue(maxsize=1)
-        self.anim_done = threading.Event()
-        self.skip = threading.Event()
-        self.energy = {"A": collections.deque(maxlen=20), "L": collections.deque(maxlen=20)}
-        self.power_idle = collections.deque(maxlen=20)
-        self.idx = 0
-        self.counts = None
-        self.live_target_s = live_target_s
-        self.status = "starting"
-
-    def _calibrate(self):
+        self.link, self.sampler, self.codes, self.target_s = link, sampler, codes, target_s
+        self.uJ = {c: collections.deque(maxlen=7) for c in codes}
         self.counts = {}
-        for m in ("A", "L"):
-            r = self.link.bench(m, 0, 5)
-            self.counts[m] = max(5, int(self.live_target_s * 1e6 / max(r["us"] / 5, 1)))
+        self.current = codes[0]
+        self.status = "starting"
+        self.lock = threading.Lock()
 
-    def _live_bench(self):
-        from bench import trial
-        for m in ("A", "L"):
-            r = trial(self.link, self.sampler, m, self.idx, self.counts[m])
-            self.energy[m].append(r["P_mean"] * r["us"] * 1e-6 / r["count"])
-        r = trial(self.link, self.sampler, "I", 0, int(0.15e6))
-        self.power_idle.append(r["P_mean"])
+    def energy(self):
+        with self.lock:
+            return {c: float(np.median(v)) for c, v in self.uJ.items() if v}
 
     def run(self):
-        try:
-            self._calibrate()
-        except Exception as e:
-            self.status = f"calibration failed: {e}"
-            print(self.status, flush=True)
+        from bench import trial
+        k = 0
         while True:
+            # the current network every other turn, the rest round-robin
+            code = self.current if k % 2 == 0 else self.codes[(k // 2) % len(self.codes)]
+            k += 1
             try:
-                tr = self.link.trace(self.idx)
-                tr["idx"] = self.idx
-                self.anim_done.clear()
-                self.traces.put(tr)
+                if code not in self.counts:
+                    r = self.link.bench(code, 0, 3)
+                    self.counts[code] = max(3, int(self.target_s * 1e6 / max(r["us"] / 3, 1)))
+                r = trial(self.link, self.sampler, code, (k * 37) % 500, self.counts[code])
+                with self.lock:
+                    self.uJ[code].append(r["P_mean"] * r["us"] * 1e-6 / r["count"] * 1e6)
                 self.status = "running"
-                if self.counts and self.sampler:
-                    self._live_bench()
-                self.anim_done.wait()
-            except Exception as e:                    # keep the show going
-                self.status = f"link error: {e}"
+            except Exception as e:                         # keep the show going
+                self.status = f"Pico link: {e}"
                 print(self.status, flush=True)
                 time.sleep(1.0)
-            self.idx = (self.idx + 1) % len(self.bundle.labels)
 
 
-# ================================================================ scene
-class Scene:
-    def __init__(self, bundle, fonts):
-        self.b, self.f = bundle, fonts
-        g = np.linspace(-0.62, 0.62, 28)
-        yy, zz = np.meshgrid(-g, g, indexing="ij")        # row 0 at the top
-        self.p_in = np.stack([np.full(784, -1.7), yy.ravel(), zz.ravel()], 1)
-        hy = np.linspace(-0.5, 0.5, 15)
-        hz = np.linspace(-0.72, 0.72, 20)
-        yy, zz = np.meshgrid(hy, hz, indexing="ij")
-        self.p_hid = np.stack([np.zeros(300), yy.ravel(), zz.ravel()], 1)[:bundle.H]
-        self.p_out = np.stack([np.full(10, 1.7), np.linspace(0.6, -0.6, 10), np.zeros(10)], 1)
-        self.tr = None
-        self.t_start = 0.0
-        self.signalled = False       # finished-animation event sent for this trace
+# ================================================================ app state
+class App:
+    def __init__(self, bundle, ink, models, sim, energy_worker, costs, energy_model):
+        self.b, self.ink, self.models, self.sim = bundle, ink, models, sim
+        self.ew, self.costs, self.em = energy_worker, costs, energy_model
+        self.views = [cls(bundle, ink) for cls in V.VIEWS]
+        self.mi, self.vi, self.idx = 0, 0, 0
+        self.tr, self.t0 = None, 0.0
+        self.tour = False
+        self.digits_in_view = 0
 
-    def project(self, P, t, cx, cy, scale):
-        yaw = -0.70 + 0.20 * math.sin(0.23 * t)      # layers seen obliquely, slowly swaying
-        pitch = 0.22 + 0.05 * math.sin(0.17 * t)
-        cyw, syw, cp, sp = math.cos(yaw), math.sin(yaw), math.cos(pitch), math.sin(pitch)
-        x = P[:, 0] * cyw + P[:, 2] * syw
-        z = -P[:, 0] * syw + P[:, 2] * cyw
-        y = P[:, 1] * cp - z * sp
-        z = P[:, 1] * sp + z * cp
-        d = 6.0 + z                       # camera 6 units away: gentle perspective
-        k = scale / d
-        return np.stack([cx + x * k, cy - y * k], 1), k / scale * 6.0   # screen xy, depth factor
+    @property
+    def model(self):
+        return self.models[self.mi]
 
-    # -------------------------------------------------------------- draw
-    def draw(self, pg, surf, now, energy, idle, status, power_hist):
-        tr = self.tr
-        t_anim = now - self.t_start if tr else 0
-        T = self.b.T
-        step_f = min(t_anim / STEP_S, T - 1e-6) if tr else 0
-        n = int(step_f)
-        done = tr is not None and t_anim >= T * STEP_S
+    def new_trace(self, now):
+        self.tr = zoo.make_trace(self.b, self.model["code"], self.idx)
+        self.t0 = now
+        if self.ew:
+            self.ew.current = self.model["code"]
 
-        self._header(pg, surf)
-        self._network(pg, surf, now, tr, n, step_f, done)
-        if tr is not None:
-            self._membrane(pg, surf, tr, step_f)
-            self._outputs(pg, surf, tr, n, done)
-            self._verdict(pg, surf, tr, done)
-        self._energy(pg, surf, energy, idle, power_hist)
-        if status and status != "running":
-            surf.blit(self.f["s"].render(status[:70], True, RED), (20, H - 24))
-        return done and t_anim >= T * STEP_S + HOLD_S
-
-    def _header(self, pg, s):
-        s.blit(self.f["m"].render("SILICON NEURON", True, CYAN), (20, 12))
-        s.blit(self.f["s"].render("spiking network vs standard network, live on a Raspberry Pi Pico",
-                                  True, dim(WHITE, 0.7)), (260, 20))
-
-    def _network(self, pg, s, now, tr, n, step_f, done):
-        cx, cy, sc = 312, 290, 900
-        pin, kin = self.project(self.p_in, now, cx, cy, sc)
-        phid, khid = self.project(self.p_hid, now, cx, cy, sc)
-        pout, kout = self.project(self.p_out, now, cx, cy, sc)
-        # --- input layer: the digit glows faintly; pixels flash when they spike
-        if tr is not None:
-            it = tr["in_time"].astype(int)
-            x = self.b.images[tr["idx"]]
-            for i in np.nonzero(x >= 20)[0]:
-                c = dim(CYAN, 0.18 + 0.25 * x[i] / 255)
-                if it[i] <= n:
-                    age = step_f - it[i]
-                    c = CYAN if age < 1.2 else dim(CYAN, 0.45 + 0.2 * x[i] / 255)
-                pg.draw.circle(s, c, pin[i], max(1, int(2.2 * kin[i])))
-        else:
-            for i in range(0, 784, 3):
-                pg.draw.circle(s, dim(CYAN, 0.12), pin[i], 1)
-        # --- hidden layer: every neuron is a dot; spikes flash magenta
-        spk_now = tr["raster"][n] if tr is not None and not done else np.zeros(len(phid), bool)
-        recent = tr["raster"][max(0, n - 2):n + 1].any(0) if tr is not None and not done else spk_now
-        for j in range(len(phid)):
-            r = max(2, int(3.0 * khid[j]))
-            if spk_now[j]:
-                pg.draw.circle(s, dim(MAGENTA, 0.35), phid[j], r + 5)
-                pg.draw.circle(s, MAGENTA, phid[j], r + 1)
-            elif recent[j]:
-                pg.draw.circle(s, dim(MAGENTA, 0.55), phid[j], r)
-            else:
-                pg.draw.circle(s, dim(MAGENTA, 0.28), phid[j], r - 1)
-        # --- spikes travelling to the output layer
-        if tr is not None and not done:
-            winner = int(np.argmax(tr["c_hist"][n]))
-            for j in np.nonzero(spk_now)[0][:40]:
-                pg.draw.line(s, dim(AMBER, 0.35), phid[j], pout[winner], 1)
-        # --- output layer
-        for k in range(10):
-            on = tr is not None and ((done and k == tr["pred"]) or (not done and k == int(np.argmax(tr["c_hist"][n]))))
-            col = AMBER if on else dim(AMBER, 0.3)
-            rad = int((9 if on else 6) * kout[k])
-            if on:
-                pg.draw.circle(s, dim(AMBER, 0.3), pout[k], rad + 7)
-            pg.draw.circle(s, col, pout[k], rad)
-            s.blit(self.f["s"].render(str(k), True, col), (pout[k][0] + 12, pout[k][1] - 8))
-        for label, xs, col in (("pixels -> spikes", pin, CYAN), ("300 spiking neurons", phid, MAGENTA),
-                               ("digit", pout, AMBER)):
-            img = self.f["s"].render(label, True, dim(col, 0.85))
-            s.blit(img, (max(8, xs[:, 0].mean() - img.get_width() / 2), xs[:, 1].max() + 14))
-
-    def _membrane(self, pg, s, tr, step_f):
-        x0, y0, w, h = 590, 70, 410, 170
-        pg.draw.rect(s, GREY, (x0, y0, w, h), 1)
-        s.blit(self.f["s"].render("membrane voltage U(t) of three neurons", True, WHITE), (x0 + 6, y0 + 4))
-        th = max(1, tr["theta"])
-        T = self.b.T
-        rel = tr["u"] / th
-        lo, hi = min(-1.0, rel.min()) - 0.2, max(1.5, rel.max()) + 0.2     # auto-scale in units of theta
-        ymap = lambda u: y0 + h - 10 - (u / th - lo) / (hi - lo) * (h - 50)
-        ty = ymap(th)
-        for xx in range(x0 + 4, x0 + w - 4, 14):
-            pg.draw.line(s, dim(RED, 0.8), (xx, ty), (xx + 7, ty), 2)
-        s.blit(self.f["s"].render("threshold", True, dim(RED, 0.9)), (x0 + w - 80, ty - 20))
-        cols = (CYAN, MAGENTA, GREEN)
-        tn = tr["trace_idx"]
-        for q in range(3):
-            pts = []
-            for k in range(int(step_f) + 1):
-                pts.append((x0 + 8 + k / (T - 1) * (w - 16), ymap(tr["u"][k][q])))
-            if len(pts) > 1:
-                pg.draw.lines(s, cols[q], False, pts, 3)
-            for k in range(int(step_f) + 1):
-                if tr["raster"][k][tn[q]]:
-                    xx = x0 + 8 + k / (T - 1) * (w - 16)
-                    pg.draw.line(s, cols[q], (xx, y0 + 26), (xx, y0 + 40), 3)
-
-    def _outputs(self, pg, s, tr, n, done):
-        x0, y0, w, h = 590, 255, 410, 125
-        c = tr["c_hist"][-1 if done else n].astype(float)
-        scale = max(1.0, np.abs(tr["c_hist"][-1]).max() / 6)
-        e = np.exp((c - c.max()) / scale)
-        p = e / e.sum()
-        s.blit(self.f["s"].render("how sure the spiking network is", True, WHITE), (x0 + 6, y0))
-        bw = w / 10
-        for k in range(10):
-            bh = p[k] * (h - 45)
-            col = AMBER if k == int(np.argmax(c)) else dim(AMBER, 0.4)
-            pg.draw.rect(s, col, (x0 + k * bw + 6, y0 + h - 20 - bh, bw - 12, bh))
-            s.blit(self.f["s"].render(str(k), True, col), (x0 + k * bw + bw / 2 - 5, y0 + h - 18))
-
-    def _verdict(self, pg, s, tr, done):
-        if not done:
+    def handle(self, ev, now):
+        if ev == "model+":
+            self.mi = (self.mi + 1) % len(self.models)
+        elif ev == "model-":
+            self.mi = (self.mi - 1) % len(self.models)
+        elif ev.startswith("pick"):
+            self.mi = min(int(ev[4:]), len(self.models) - 1)
+        elif ev == "view+":
+            self.vi = (self.vi + 1) % len(self.views)
             return
-        lab = tr["label"]
-        for i, (name, pred, col) in enumerate((("spiking network", tr["pred"], MAGENTA),
-                                               ("standard network", tr["ann_pred"], CYAN))):
-            ok = pred == lab
-            txt = f"{name}: {pred} {'correct' if ok else 'wrong'}"
-            s.blit(self.f["m"].render(txt, True, col if ok else RED), (30, 520 + i * 34))
+        elif ev == "digit":
+            self.idx = (self.idx + 1) % len(self.b.labels)
+        elif ev == "tour":
+            self.tour = not self.tour
+            return
+        self.new_trace(now)
 
-    def _energy(self, pg, s, energy, idle, power_hist):
-        x0, y0, w, h = 590, 392, 410, 196
-        pg.draw.rect(s, GREY, (x0, y0, w, h), 1)
-        s.blit(self.f["s"].render("energy per answer, measured live on the Pico", True, WHITE), (x0 + 6, y0 + 4))
-        ea = np.mean(energy["A"]) if energy["A"] else None
-        el = np.mean(energy["L"]) if energy["L"] else None
-        if ea and el:
-            mx = max(ea, el)
-            for i, (name, e, col) in enumerate((("standard", ea, CYAN), ("spiking", el, MAGENTA))):
-                yy = y0 + 32 + i * 44
-                pg.draw.rect(s, col, (x0 + 100, yy, (w - 200) * e / mx, 28))
-                s.blit(self.f["s"].render(name, True, col), (x0 + 8, yy + 5))
-                s.blit(self.f["s"].render(f"{e * 1e6:,.0f} uJ", True, col), (x0 + w - 92, yy + 5))
-            ratio = ea / el
-            msg = (f"spiking uses {ratio:.1f}x less energy" if ratio >= 1
-                   else f"spiking uses {1 / ratio:.1f}x MORE energy")
-            s.blit(self.f["m"].render(msg, True, GREEN if ratio >= 1 else RED), (x0 + 8, y0 + 110))
-        else:
-            s.blit(self.f["s"].render("measuring ...", True, dim(WHITE, 0.6)), (x0 + 8, y0 + 40))
-        # live power strip (last ~6 s)
-        if power_hist is not None and len(power_hist):
-            ph = np.array(power_hist)
-            ph = ph[ph[:, 0] > ph[-1, 0] - 6.0]
-            if len(ph) > 2:
-                lo, hi = ph[:, 1].min(), ph[:, 1].max() + 1e-4
-                xs = x0 + 8 + (ph[:, 0] - ph[-1, 0] + 6.0) / 6.0 * (w - 16)
-                ys = y0 + h - 8 - (ph[:, 1] - lo) / (hi - lo) * 26
-                pg.draw.lines(s, dim(GREEN, 0.8), False, list(zip(xs, ys)), 2)
-                s.blit(self.f["s"].render(f"Pico power now: {ph[-1, 1] * 1e3:.0f} mW", True, dim(GREEN, 0.8)),
-                       (x0 + 8, y0 + h - 52))
+    def info(self):
+        p_active = 0.10
+        pred = {}
+        for m in self.models:
+            c = self.costs.get(m["code"], {}).get("cycles")
+            if c:
+                pred[m["code"]] = self.em.pico_energy_uJ(c, p_active_w=p_active)
+        return {"energy": self.ew.energy() if self.ew else {}, "predicted": pred, "sim": self.sim,
+                "accuracy": {k: v.get("accuracy") for k, v in self.costs.items() if v.get("accuracy")},
+                "models": self.models, "cycles_fn": self.em.pico_cycles}
+
+    def draw(self, pg, s, now):
+        tl = V.timeline(self.tr, now - self.t0)
+        view = self.views[self.vi]
+        view.draw(pg, s, now, self.tr, self.model, tl, self.info())
+        self._chrome(pg, s, view)
+        return tl
+
+    def _chrome(self, pg, s, view):
+        ink = self.ink
+        ink.text(s, "SILICON NEURON", (24, 14), zoo.CYAN, "m")
+        x = 250
+        for k, m in enumerate(self.models):                 # the network selector
+            sel = k == self.mi
+            r = ink.text(s, m["short"], (x, 18), m["colour"] if sel else V.dim(m["colour"], 0.45), "sb" if sel else "s")
+            if sel:
+                pg.draw.line(s, m["colour"], (r.left, r.bottom + 3), (r.right, r.bottom + 3), 3)
+            x = r.right + 18
+        x = 720
+        for k, v in enumerate(self.views):                   # the visual tabs
+            sel = k == self.vi
+            r = ink.text(s, v.name, (x, 18), V.WHITE if sel else V.dim(V.WHITE, 0.4), "sb" if sel else "s")
+            if sel:
+                pg.draw.line(s, V.WHITE, (r.left, r.bottom + 3), (r.right, r.bottom + 3), 2)
+            x = r.right + 16
+        ink.text(s, self.model["name"], (24, 46), self.model["colour"], "sb")
+        hint = "wheel: network   click: view   button: next digit" + ("   (touring)" if self.tour else "")
+        ink.text(s, hint, (W - 20, H - 22), V.dim(V.WHITE, 0.45), "xs", anchor="topright")
+        if self.ew and self.ew.status not in ("running", "starting"):
+            ink.text(s, self.ew.status[:80], (24, H - 22), V.RED, "xs")
+
+    def tour_step(self, now):
+        """Called when a digit's animation has finished while touring."""
+        self.digits_in_view += 1
+        if self.digits_in_view >= 2:
+            self.digits_in_view = 0
+            self.vi = (self.vi + 1) % len(self.views)
+            if self.vi == 0:
+                self.mi = (self.mi + 1) % len(self.models)
+        self.idx = (self.idx + 1) % len(self.b.labels)
+        self.new_trace(now)
+
+
+def load_costs():
+    p = os.path.join(HERE, "model_costs.json")
+    return json.load(open(p)) if os.path.exists(p) else {}
 
 
 # ================================================================ main
@@ -293,19 +181,23 @@ def main():
     ap.add_argument("--port", default="/dev/serial0")
     ap.add_argument("--chip", default="ina226")
     ap.add_argument("--shunt", type=float, default=0.100)
+    ap.add_argument("--tour", action="store_true", help="start in the automatic tour")
+    ap.add_argument("--model", default=None, help="start on this network (A Z L P E)")
+    ap.add_argument("--view", type=int, default=0)
     ap.add_argument("--snapshot", help="render one frame to this PNG and exit (no display)")
-    ap.add_argument("--snapshot-step", type=float, default=9.5)
-    ap.add_argument("--snapshot-idx", type=int, default=0)
+    ap.add_argument("--at", type=float, default=1.5, help="snapshot: seconds into the animation")
+    ap.add_argument("--idx", type=int, default=0, help="test image to start on")
     a = ap.parse_args()
 
     if a.snapshot:
         os.environ["SDL_VIDEODRIVER"] = "dummy"
     import pygame as pg
+    import energy_model
     from bench import Sampler, make_link
 
     class _A:  # adapt to bench.make_link
         sim, port, chip, shunt = a.sim, a.port, a.chip, a.shunt
-        calibration = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", "calibration.json")
+        calibration = os.path.join(HERE, "results", "calibration.json")
     bundle, link, sensor = make_link(_A)
 
     pg.init()
@@ -313,70 +205,63 @@ def main():
     screen = pg.display.set_mode((W, H), pg.FULLSCREEN if fullscreen else 0)
     pg.display.set_caption("Silicon Neuron hologram")
     pg.mouse.set_visible(False)
-
-    def font(sz, bold=False):
-        try:
-            return pg.font.SysFont("dejavusans", sz, bold=bold)
-        except Exception:
-            return pg.font.Font(None, sz + 6)
-    fonts = {"s": font(16), "m": font(26, True), "l": font(48, True)}
-    scene = Scene(bundle, fonts)
+    ink = V.Ink(pg)
+    models = zoo.available(bundle)
     canvas = pg.Surface((W, H))
     mirror = not a.no_mirror
 
     if a.snapshot:
-        tr = link.trace(a.snapshot_idx)
-        tr["idx"] = a.snapshot_idx
-        scene.tr, scene.t_start = tr, 0.0
-        energy = {"A": [], "L": []}          # a snapshot never shows invented energy numbers
-        now = a.snapshot_step * STEP_S
+        app = App(bundle, ink, models, a.sim, None, load_costs(), energy_model)
+        if a.model:
+            app.mi = [m["code"] for m in models].index(a.model)
+        app.vi, app.idx = a.view, a.idx
+        app.new_trace(0.0)
         canvas.fill((0, 0, 0))
-        scene.draw(pg, canvas, now, energy, [], "running", None)
-        out = pg.transform.flip(canvas, mirror, False)
-        pg.image.save(out, a.snapshot)
+        app.draw(pg, canvas, a.at)
+        pg.image.save(pg.transform.flip(canvas, mirror, False), a.snapshot)
         print("saved", a.snapshot)
         return
 
     from sensors import StatusLEDs
     sampler = Sampler(sensor, link, leds=StatusLEDs(enabled=not a.sim))
     sampler.start()
-    worker = DemoWorker(link, sampler, bundle)
-    worker.start()
-
-    button = None
-    if not a.sim:
-        try:
-            from gpiozero import Button
-            button = Button(27, pull_up=True, bounce_time=0.05)
-            button.when_pressed = lambda: worker.anim_done.set()
-        except Exception as e:
-            print("button unavailable:", e)
+    ew = EnergyWorker(link, sampler, [m["code"] for m in models])
+    ew.start()
+    controls = Controls(use_gpio=not a.sim)
+    app = App(bundle, ink, models, a.sim, ew, load_costs(), energy_model)
+    if a.model:
+        app.mi = [m["code"] for m in models].index(a.model)
+    app.vi, app.idx, app.tour = a.view, a.idx, a.tour
+    app.new_trace(time.perf_counter())
 
     clock = pg.time.Clock()
     while True:
+        now = time.perf_counter()
         for ev in pg.event.get():
-            if ev.type == pg.QUIT or (ev.type == pg.KEYDOWN and ev.key == pg.K_ESCAPE):
+            if ev.type == pg.QUIT:
                 pg.quit()
                 return
-            if ev.type == pg.KEYDOWN and ev.key == pg.K_SPACE:
-                worker.anim_done.set()
-            if ev.type == pg.KEYDOWN and ev.key == pg.K_m:
+            cmd = controls.handle_pygame(pg, ev)
+            if cmd == "quit":
+                pg.quit()
+                return
+            if cmd == "mirror":
                 mirror = not mirror
-            if ev.type == pg.KEYDOWN and ev.key == pg.K_f:
+            if cmd == "fullscreen":
                 pg.display.toggle_fullscreen()
-        now = time.perf_counter()
-        try:
-            tr = worker.traces.get_nowait()
-            scene.tr, scene.t_start, scene.signalled = tr, now, False
-        except queue.Empty:
-            pass
+        for ev in controls.events():
+            app.handle(ev, now)
+        if not app.tour and time.time() - controls.last_input > TOUR_IDLE_S:
+            app.tour = True
+        elif app.tour and time.time() - controls.last_input < 1:
+            app.tour = False
         canvas.fill((0, 0, 0))
-        with sampler.lock:
-            ph = [(t, p, m) for t, p, m in sampler.history]
-        finished = scene.draw(pg, canvas, now, worker.energy, list(worker.power_idle), worker.status, ph)
-        if finished and not scene.signalled:
-            scene.signalled = True
-            worker.anim_done.set()
+        tl = app.draw(pg, canvas, now)
+        if tl.get("finished"):
+            if app.tour:
+                app.tour_step(now)
+            else:                                    # replay the same digit until someone asks
+                app.t0 = now
         out = pg.transform.flip(canvas, mirror, False)
         if a.rotate == 180:
             out = pg.transform.rotate(out, 180)

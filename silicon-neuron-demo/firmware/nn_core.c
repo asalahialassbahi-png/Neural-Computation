@@ -146,3 +146,68 @@ int snn_infer(const uint8_t *x, int enc, uint32_t img_index,
     if (c_out) memcpy(c_out, c, sizeof c);
     return best;
 }
+
+// ===================================================================== SNN-E
+#if HAS_FAST
+int snn_fast_infer(const uint8_t *x, int32_t exit_margin, uint32_t *spikes_out,
+                   uint32_t *steps_out, int32_t *c_out)
+{
+    static int32_t U[N_HID];                     // membrane, stored ALREADY leaked and reset
+    static uint16_t fired[N_HID];
+    static uint16_t bucket[FAST_T_IN][N_IN];     // pixels spiking at each step (one-pass encoder)
+    uint16_t nb[FAST_T_IN];
+    int32_t U2[N_OUT] = {0}, c[N_OUT] = {0};
+    uint32_t total = 0;
+    int steps = FAST_T;
+
+    memset(U, 0, sizeof U);
+    memset(nb, 0, sizeof nb);
+    // ---- latency code in ONE pass: t = ((255 - x) * T_IN) >> 8 for x >= X_MIN
+    for (int i = 0; i < N_IN; i++) {
+        uint32_t xi = x[i];
+        if (xi < FAST_X_MIN) continue;
+        uint32_t t = ((255u - xi) * FAST_T_IN) >> 8;
+        bucket[t][nb[t]++] = (uint16_t)i;
+    }
+    for (int n = 0; n < FAST_T; n++) {
+        // ---- input spikes add their weight rows straight into the membrane
+        int ne = n < FAST_T_IN ? nb[n] : 0;     // t < T_IN always, so later steps have no input
+        for (int k = 0; k < ne; k++) {
+            const int8_t *row = &fast_W1[bucket[n][k] * N_HID];
+            for (int j = 0; j < N_HID; j++) U[j] += row[j];
+        }
+        // ---- one fused pass: spike test, then leak and reset ready for step n+1
+        //      S = [U >= theta];  U <- U - (U >> K) - theta*S
+        int nf = 0;
+        for (int j = 0; j < N_HID; j++) {
+            int32_t u = U[j];
+            int32_t v = u - (u >> FAST_K_BETA);
+            if (u >= FAST_THETA) { fired[nf++] = (uint16_t)j; v -= FAST_THETA; }
+            U[j] = v;
+        }
+        total += nf;
+        // ---- output: U2 <- U2 - (U2 >> K) + rows of fired neurons; c += U2
+        for (int k = 0; k < N_OUT; k++) U2[k] -= U2[k] >> FAST_K_BETA;
+        for (int f = 0; f < nf; f++) {
+            const int8_t *row = &fast_W2[fired[f] * N_OUT];
+            for (int k = 0; k < N_OUT; k++) U2[k] += row[k];
+        }
+        for (int k = 0; k < N_OUT; k++) c[k] += U2[k];
+        // ---- early exit: is the leading digit far enough ahead of the runner-up?
+        if (exit_margin >= 0 && n + 1 >= FAST_N_MIN && n < FAST_T - 1) {
+            int32_t m1 = c[0], m2 = INT32_MIN;
+            for (int k = 1; k < N_OUT; k++) {
+                if (c[k] > m1) { m2 = m1; m1 = c[k]; }
+                else if (c[k] > m2) m2 = c[k];
+            }
+            if ((int64_t)m1 - m2 >= (int64_t)exit_margin * (n + 1)) { steps = n + 1; break; }
+        }
+    }
+    int best = 0;
+    for (int k = 1; k < N_OUT; k++) if (c[k] > c[best]) best = k;
+    if (spikes_out) *spikes_out = total;
+    if (steps_out) *steps_out = (uint32_t)steps;
+    if (c_out) memcpy(c_out, c, sizeof c);
+    return best;
+}
+#endif

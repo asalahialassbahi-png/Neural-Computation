@@ -23,3 +23,12 @@ int ann_infer(const uint8_t *x, int skip_zeros, int32_t *acc_out);
 // (may be NULL) the 10 summed output potentials, tr (may be NULL) the trace.
 int snn_infer(const uint8_t *x, int enc, uint32_t img_index,
               uint32_t *spikes_out, int32_t *c_out, snn_trace_t *tr);
+
+#if HAS_FAST
+// SNN-E, the Pico-optimised spiking network: first-order LIF (no synaptic
+// current), short latency code, evidence accumulated every step and an early
+// exit once c_best - c_second >= exit_margin * (steps so far). exit_margin < 0
+// disables the exit (always FAST_T steps). Bit-exact with intsim.snn_fast_int.
+int snn_fast_infer(const uint8_t *x, int32_t exit_margin, uint32_t *spikes_out,
+                   uint32_t *steps_out, int32_t *c_out);
+#endif

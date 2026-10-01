@@ -9,21 +9,21 @@ from config import N_IN, T_STEPS, T_IN, X_MIN, POISSON_SEED
 NO_SPIKE = 255  # sentinel spike time meaning "this pixel never fires"
 
 
-def latency_times(x_u8):
+def latency_times(x_u8, t_in=T_IN, x_min=X_MIN):
     """x_u8: (..., 784) uint8 -> spike time per pixel (uint8), NO_SPIKE if silent.
 
-    t_i = ((255 - x_i) * T_IN) >> 8  for x_i >= X_MIN.
-    Brightest pixels (255) fire at step 0; X_MIN-level pixels fire last.
+    t_i = ((255 - x_i) * t_in) >> 8  for x_i >= x_min.
+    Brightest pixels (255) fire at step 0; x_min-level pixels fire last.
     """
     x = x_u8.astype(np.int32)
-    t = ((255 - x) * T_IN) >> 8
-    t = np.where(x >= X_MIN, t, NO_SPIKE)
+    t = ((255 - x) * t_in) >> 8
+    t = np.where(x >= x_min, t, NO_SPIKE)
     return t.astype(np.uint8)
 
 
-def latency_spikes(x_u8, T=T_STEPS):
+def latency_spikes(x_u8, T=T_STEPS, t_in=T_IN, x_min=X_MIN):
     """Dense spike tensor (B, T, 784) float32 for training."""
-    t = latency_times(x_u8)                       # (B, 784)
+    t = latency_times(x_u8, t_in, x_min)          # (B, 784)
     steps = np.arange(T, dtype=np.uint8)[None, :, None]
     return (t[:, None, :] == steps).astype(np.float32)
 

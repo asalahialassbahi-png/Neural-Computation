@@ -14,7 +14,8 @@ import numpy as np
 
 import config as C
 from export import WDIR
-from intsim import quantise_ann, quantise_snn, ann_int, snn_int, input_spikes_int
+from intsim import (quantise_ann, quantise_snn, ann_int, snn_int, input_spikes_int,
+                    quantise_snn_fast, snn_fast_int)
 from mnist_idx import load_mnist
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -25,7 +26,7 @@ def main():
     subprocess.run(["make", "-s", "-C", HT], check=True)
     out = subprocess.run([os.path.join(HT, "host_test")], check=True,
                          capture_output=True, text=True).stdout.split("\n")
-    rows = {"A": [], "L": [], "P": []}
+    rows = {"A": [], "L": [], "P": [], "F": [], "E": []}
     for ln in out:
         if ln:
             parts = ln.split()
@@ -59,6 +60,23 @@ def main():
         print(f"SNN-{enc:7s}: mismatches = {m_pred} preds, {m_sp} spike counts, {m_c} potentials;"
               f"  accuracy on Pico set {(p == yte[:N]).mean() * 100:.1f}%,"
               f"  mean hidden spikes/inference {S.sum((1, 2)).mean():.1f}")
+
+    # ---- SNN-E, without and with the deployed early exit
+    if "F" in rows:
+        z = dict(np.load(os.path.join(os.path.dirname(HERE), "pi", "model_bundle.npz")))
+        margin = int(z["snn_fast_exit_margin"])
+        qf = quantise_snn_fast(dict(np.load(os.path.join(WDIR, "snn_fast_float.npz"))))
+        for code, m in (("F", None), ("E", margin if margin >= 0 else None)):
+            p, c, cnt = snn_fast_int(qf, x, exit_margin=m)
+            R = rows[code]
+            m_pred = (R[:, 1] != p).sum()
+            m_sp = (R[:, 2] != cnt["hid_spikes"]).sum()
+            m_st = (R[:, 3] != cnt["steps"]).sum()
+            m_c = (R[:, 4:] != c).sum()
+            bad += m_pred + m_sp + m_st + m_c
+            print(f"SNN-E {'no exit' if m is None else f'exit {m}':8s}: mismatches = {m_pred} preds, {m_sp} spike counts, "
+                  f"{m_st} step counts, {m_c} potentials;  accuracy on Pico set {(p == yte[:N]).mean() * 100:.1f}%,"
+                  f"  mean steps {cnt['steps'].mean():.2f}")
 
     # ---- the serial trace protocol, parsed exactly as the Pi parses it
     sys.path.insert(0, os.path.join(os.path.dirname(HERE), "pi"))
