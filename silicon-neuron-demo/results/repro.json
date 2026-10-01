@@ -1,0 +1,198 @@
+{
+ "seeds": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "summary": {
+  "ann": {
+   "mean": 0.98192,
+   "sd": 0.0005069516742254839,
+   "ci95": [
+    0.9812897304068893,
+    0.9825502695931108
+   ],
+   "values": [
+    0.9826,
+    0.9821,
+    0.9819,
+    0.9812,
+    0.9818
+   ]
+  },
+  "ann_skip_cycles": {
+   "mean": 626925.0793200001,
+   "sd": 407.85629650254106,
+   "ci95": [
+    626418.0104313589,
+    627432.1482086413
+   ],
+   "values": [
+    627459.4878000001,
+    626656.5062000001,
+    626604.8466,
+    626633.1898,
+    627271.3662
+   ]
+  },
+  "snn_fast": {
+   "mean": 0.9783799999999999,
+   "sd": 0.0011903780911962552,
+   "ci95": [
+    0.9769000579200522,
+    0.9798599420799476
+   ],
+   "values": [
+    0.9798,
+    0.9787,
+    0.9771,
+    0.9791,
+    0.9772
+   ]
+  },
+  "snn_fast_cycles": {
+   "mean": 362734.53160000005,
+   "sd": 2105.812223720723,
+   "ci95": [
+    360116.4725602703,
+    365352.5906397298
+   ],
+   "values": [
+    363497.4805,
+    362807.623,
+    361508.65,
+    365719.75450000004,
+    360139.1500000001
+   ]
+  },
+  "snn_fast_steps": {
+   "mean": 1.3551600000000001,
+   "sd": 0.08468277865067966,
+   "ci95": [
+    1.249877814029913,
+    1.4604421859700873
+   ],
+   "values": [
+    1.3787,
+    1.3574,
+    1.3086,
+    1.479,
+    1.2521
+   ]
+  },
+  "snn_fast_margin": {
+   "mean": 3.0,
+   "sd": 0.7071067811865476,
+   "ci95": [
+    2.1208868104731904,
+    3.8791131895268096
+   ],
+   "values": [
+    3.0,
+    3.0,
+    3.0,
+    4.0,
+    2.0
+   ]
+  },
+  "gap_points": {
+   "mean": 0.354000000000001,
+   "sd": 0.11567194992737188,
+   "ci95": [
+    0.2101904092210802,
+    0.49780959077892173
+   ],
+   "values": [
+    0.28000000000000247,
+    0.33999999999999586,
+    0.48000000000000265,
+    0.20999999999999908,
+    0.46000000000000485
+   ]
+  },
+  "cycle_ratio_vs_ann_skip": {
+   "mean": 0.5785938097192719,
+   "sd": 0.003486180968025874,
+   "ci95": [
+    0.5742596019990092,
+    0.5829280174395346
+   ],
+   "values": [
+    0.5793162547824333,
+    0.5789577215116449,
+    0.576932419149916,
+    0.5836265305652344,
+    0.5741361225871305
+   ]
+  }
+ },
+ "manifest": {
+  "python": "3.11.15",
+  "numpy": "1.26.4",
+  "platform": "Linux-6.18.44-fc-v50-x86_64-with-glibc2.39",
+  "mnist_sha256": {
+   "t10k-images-idx3-ubyte.gz": "8d422c7b0a1c1c79245a5bcf07fe86e33eeafee792b84584aec276f5a2dbc4e6",
+   "t10k-labels-idx1-ubyte.gz": "f7ae60f92e00ec6debd23a6088c31dbd2371eca3ffa0defaefb259924204aec6",
+   "train-images-idx3-ubyte.gz": "440fcabf73cc546fa21475e81ea370265605f56be210a4024d2ca8f203523609",
+   "train-labels-idx1-ubyte.gz": "3552534a0a558bbed6aed32b30c495cca23d567ec52cac8be1a0730e8010255c"
+  },
+  "source_sha256": {
+   "config.py": "1168fd155d3ade36f9d93ba3892cef0bb8640c5851fc95f62e2a5934accb18db",
+   "cycle_audit.py": "1f425e54bbb0cd3b640cb252c965cb6993ddd95137d0ce97665e2a7c7b3ec02e",
+   "encoding.py": "a6d8925c6eedb663d8b99030a3a07e0df515695635ddc8f74e40d2e475412d41",
+   "energy_model.py": "8c1cca32fc2db62e0859c42255ccb471a48fb9e343c4afd5b9ce23f9adb41860",
+   "experiments_e.py": "17b01d72ba5e44f7a9a2187eb3f3db983f68c8afb2a2adb5ddcca5b37e9c546a",
+   "export.py": "c8bd1ffec2a837c8ed0e12c61c35e1663c0439562dcfb7060d2a4f4944edb6ab",
+   "gradcheck.py": "ba25d15b93b8cbcce93d71e5875dd3ac16b9d3a9df9c2facdf9c2296359df6af",
+   "intsim.py": "973843e08c372e837e93b80b93eb6e79aa7fc71eae17cb7b4ed65f358795b2ad",
+   "mnist_idx.py": "8ddf835d4dc858bcbfb19ed19eafe4d382ada2f3e77844c497201c0ac8dde3b8",
+   "models.py": "82b1a09bfdd8425f4f8d32042ee5ada0dbb61802a602387d181ad88b456be1b8",
+   "prove.py": "ef73a2072bda6ae59aa8a9310e4d53e003509f481c6a38e526efab8b1b0902c5",
+   "repro.py": "eaf45c84e99be3fb89b6dcc7a16b5428ed97a89f3a9b25f714fb77a623f2c2ea",
+   "sweep.py": "76ea6983464d58c99ed8005ca494abe047a1fae489d35cb7f30536b1ffc35c33",
+   "train.py": "600f97871ccbc2a9e5d7801372dd49f8aeb8c79ccfdbde3c543b92296f5a14e8",
+   "verify_c.py": "8902f4dc504d4087c809bd33a7899f18ef512f3a9dd165d381fe5874df8b6c61"
+  },
+  "recipes": {
+   "ann": [
+    "--model",
+    "ann",
+    "--epochs",
+    "10"
+   ],
+   "snn_fast": [
+    "--model",
+    "snn",
+    "--enc",
+    "latency",
+    "--first-order",
+    "--readout",
+    "perstep",
+    "--T",
+    "8",
+    "--tin",
+    "3",
+    "--xmin",
+    "96",
+    "--lam",
+    "1.0",
+    "--epochs",
+    "10",
+    "--val-only"
+   ],
+   "snn_latency": [
+    "--model",
+    "snn",
+    "--enc",
+    "latency",
+    "--epochs",
+    "20",
+    "--val-only"
+   ]
+  },
+  "blas_threads": 2,
+  "note": "bit-identical reruns need the same NumPy/BLAS build and thread count; otherwise results differ within the seed-to-seed spread reported here"
+ }
+}

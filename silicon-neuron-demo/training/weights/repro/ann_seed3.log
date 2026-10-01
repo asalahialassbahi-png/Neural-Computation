@@ -1,0 +1,12 @@
+epoch  1/10  loss 0.2918  val acc 96.52%  (5s)
+epoch  2/10  loss 0.1237  val acc 97.46%  (5s)
+epoch  3/10  loss 0.0824  val acc 97.88%  (5s)
+epoch  4/10  loss 0.0597  val acc 97.78%  (6s)
+epoch  5/10  loss 0.0443  val acc 97.78%  (6s)
+epoch  6/10  loss 0.0340  val acc 98.22%  (6s)
+epoch  7/10  loss 0.0252  val acc 98.22%  (5s)
+epoch  8/10  loss 0.0138  val acc 98.50%  (6s)
+epoch  9/10  loss 0.0111  val acc 98.44%  (6s)
+epoch 10/10  loss 0.0099  val acc 98.38%  (6s)
+TEST accuracy (float): 98.13%
+saved /home/user/Neural-Computation/silicon-neuron-demo/training/weights/repro/ann_seed3.npz

@@ -1,0 +1,11 @@
+epoch  1/10  loss 0.3132  val acc 96.74%  mean rate r = 0.0353 spikes/neuron/step  T*r = 0.282  (14s)
+epoch  2/10  loss 0.1326  val acc 97.32%  mean rate r = 0.0295 spikes/neuron/step  T*r = 0.236  (13s)
+epoch  3/10  loss 0.0899  val acc 97.52%  mean rate r = 0.0272 spikes/neuron/step  T*r = 0.218  (16s)
+epoch  4/10  loss 0.0672  val acc 97.58%  mean rate r = 0.0245 spikes/neuron/step  T*r = 0.196  (14s)
+epoch  5/10  loss 0.0524  val acc 97.64%  mean rate r = 0.0225 spikes/neuron/step  T*r = 0.180  (13s)
+epoch  6/10  loss 0.0412  val acc 97.66%  mean rate r = 0.0214 spikes/neuron/step  T*r = 0.171  (12s)
+epoch  7/10  loss 0.0335  val acc 97.72%  mean rate r = 0.0200 spikes/neuron/step  T*r = 0.160  (13s)
+epoch  8/10  loss 0.0206  val acc 97.94%  mean rate r = 0.0185 spikes/neuron/step  T*r = 0.148  (13s)
+epoch  9/10  loss 0.0160  val acc 98.02%  mean rate r = 0.0180 spikes/neuron/step  T*r = 0.144  (13s)
+epoch 10/10  loss 0.0132  val acc 97.94%  mean rate r = 0.0173 spikes/neuron/step  T*r = 0.138  (14s)
+saved /home/user/Neural-Computation/silicon-neuron-demo/training/weights/repro/snn_fast_seed1.npz

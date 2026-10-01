@@ -211,7 +211,9 @@ def main():
           "![break-even](fig_break_even.png)", "", "![pareto](fig_pareto.png)", "",
           "![per digit](fig_per_digit.png)", "", "![early exit](fig_early_exit.png)", ""]
     if os.path.exists(repro):
-        L += ["## 5. Repeatability", ""] + open(repro).read().splitlines()[2:]
+        L += ["## 5. Repeatability", ""] + open(repro).read().splitlines()[2:] + [
+            "", "The deployed SNN-E is seed 0 of this table (its gap, 0.28 points, is on the good side of the "
+            "five-seed mean, 0.35); quote the five-seed mean +/- sd as the result of the method."]
     open(os.path.join(RES, "PROOF.md"), "w").write("\n".join(L) + "\n")
     print("\n".join(L[:40]))
 
