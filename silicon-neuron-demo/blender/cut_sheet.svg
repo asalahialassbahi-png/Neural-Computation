@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620mm" height="895mm" viewBox="0 0 620 895">
+<rect width="100%" height="100%" fill="white"/>
+<rect x="10" y="10" width="196.0" height="220.0" fill="none" stroke="red" stroke-width="0.3"/>
+<text x="13" y="19" font-size="6" font-family="sans-serif">FLOOR (black)  196 x 220 mm</text>
+<rect x="216.0" y="10" width="196.0" height="220.0" fill="none" stroke="red" stroke-width="0.3"/>
+<text x="219.0" y="19" font-size="6" font-family="sans-serif">ROOF (screen window; top edge of drawing = front)  196 x 220 mm</text>
+<rect x="236.9" y="64.1" width="154.2" height="85.9" fill="none" stroke="blue" stroke-width="0.3"/>
+<circle cx="386.0" cy="204.0" r="7.0" fill="none" stroke="blue" stroke-width="0.3"/>
+<rect x="10" y="255.0" width="225.0" height="180.0" fill="none" stroke="red" stroke-width="0.3"/>
+<text x="13" y="264.0" font-size="6" font-family="sans-serif">SIDE L  225 x 180 mm</text>
+<rect x="245.0" y="255.0" width="225.0" height="180.0" fill="none" stroke="red" stroke-width="0.3"/>
+<text x="248.0" y="264.0" font-size="6" font-family="sans-serif">SIDE R  225 x 180 mm</text>
+<rect x="10" y="460.0" width="196.0" height="180.0" fill="none" stroke="red" stroke-width="0.3"/>
+<text x="13" y="469.0" font-size="6" font-family="sans-serif">BACK (slot = USB power in)  196 x 180 mm</text>
+<rect x="30.0" y="475.0" width="24.0" height="12.0" fill="none" stroke="blue" stroke-width="0.3"/>
+<rect x="216.0" y="460.0" width="196.0" height="45.0" fill="none" stroke="red" stroke-width="0.3"/>
+<text x="219.0" y="469.0" font-size="6" font-family="sans-serif">CAP FRONT (24 mm button hole)  196 x 45 mm</text>
+<circle cx="382.0" cy="482.5" r="12.0" fill="none" stroke="blue" stroke-width="0.3"/>
+<rect x="422.0" y="460.0" width="196.0" height="220.0" fill="none" stroke="red" stroke-width="0.3"/>
+<text x="425.0" y="469.0" font-size="6" font-family="sans-serif">CAP LID  196 x 220 mm</text>
+<rect x="452.0" y="640.0" width="10.0" height="30.0" fill="none" stroke="blue" stroke-width="0.3"/>
+<rect x="474.0" y="640.0" width="10.0" height="30.0" fill="none" stroke="blue" stroke-width="0.3"/>
+<rect x="496.0" y="640.0" width="10.0" height="30.0" fill="none" stroke="blue" stroke-width="0.3"/>
+<rect x="518.0" y="640.0" width="10.0" height="30.0" fill="none" stroke="blue" stroke-width="0.3"/>
+<rect x="540.0" y="640.0" width="10.0" height="30.0" fill="none" stroke="blue" stroke-width="0.3"/>
+<rect x="562.0" y="640.0" width="10.0" height="30.0" fill="none" stroke="blue" stroke-width="0.3"/>
+<rect x="10" y="705.0" width="196.0" height="8.0" fill="none" stroke="red" stroke-width="0.3"/>
+<text x="13" y="714.0" font-size="6" font-family="sans-serif">VALANCE  196 x 8 mm</text>
+<rect x="216.0" y="705.0" width="169.7" height="8.0" fill="none" stroke="red" stroke-width="0.3"/>
+<text x="219.0" y="714.0" font-size="6" font-family="sans-serif">PANE RAIL x4 (glue at 45 deg)  170 x 8 mm</text>
+<rect x="395.7056274847714" y="705.0" width="190.0" height="169.7" fill="none" stroke="red" stroke-width="0.3"/>
+<text x="398.7056274847714" y="714.0" font-size="6" font-family="sans-serif">ACRYLIC PANE 2 mm (order cut)  190 x 170 mm</text>
+<text x="10" y="889" font-size="5" font-family="sans-serif">red = outline, blue = cut-out. Check the 100 mm scale bar before cutting.</text>
+<line x1="400" y1="887" x2="500" y2="887" stroke="black" stroke-width="0.8"/><text x="440" y="884" font-size="5">100 mm</text>
+</svg>

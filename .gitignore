@@ -1,0 +1,5 @@
+silicon-neuron-demo/blender/renders/assembly/
+silicon-neuron-demo/blender/renders/assembly_captioned/
+silicon-neuron-demo/blender/renders/preview/
+__pycache__/
+*.blend1

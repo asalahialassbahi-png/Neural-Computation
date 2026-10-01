@@ -1,0 +1,30 @@
+{
+  "ann_float_acc": 0.9827,
+  "ann_int_acc": 0.9826,
+  "snn_latency_float_acc": 0.9807,
+  "snn_latency_int_acc": 0.9808,
+  "snn_latency_ops": {
+    "ann_dense_MAC": 238200,
+    "ann_skip_MAC": 48336.57,
+    "snn_in_AC": 37211.159999999996,
+    "snn_hid_AC": 602.8580000000001,
+    "snn_neuron_updates": 4960,
+    "snn_Tr": 0.20095266666666667
+  },
+  "snn_latency_theta_q": 65,
+  "snn_poisson_float_acc": 0.9744,
+  "snn_poisson_int_acc": 0.9745,
+  "snn_poisson_ops": {
+    "ann_dense_MAC": 238200,
+    "ann_skip_MAC": 45443.700000000004,
+    "snn_in_AC": 453162.3,
+    "snn_hid_AC": 3161.14,
+    "snn_neuron_updates": 4960,
+    "snn_Tr": 1.0537133333333333
+  },
+  "snn_poisson_theta_q": 73,
+  "ann_ops": {
+    "ann_dense_MAC": 238200,
+    "ann_skip_MAC": 48336.57
+  }
+}
