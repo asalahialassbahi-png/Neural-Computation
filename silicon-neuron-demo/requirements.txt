@@ -1,0 +1,6 @@
+# Everything needed to run the hologram in simulation and regenerate the graphs on a PC:
+#   pip install -r requirements.txt
+numpy
+pygame
+matplotlib
+scipy
