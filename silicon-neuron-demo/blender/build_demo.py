@@ -53,6 +53,8 @@ EXT_D = IN_D + T_WALL
 EXT_H = T_WALL + IN_H + T_WALL + CAP_H + T_WALL
 SLOT_X, SLOT_TOP, SLOT_W, SLOT_H = 20.0, T_WALL + 10, 24.0, 12.0   # back-wall cable slot (from top-left, seen from the front)
 VENT_X0, VENT_PITCH, VENT_W, VENT_Y0, VENT_D = 30.0, 22.0, 10.0, IN_D - 40, 30.0   # 6 lid vents
+HATCH_W, HATCH_H = 120.0, 95.0      # service hatch, bottom centre of the back: the tin slides out through it
+LED_X, LED_Z = 12.0, (30.0, 15.0)   # cap-front LEDs (green, red): mm from the left edge / above the cap floor
 
 HERE = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else os.getcwd()
 
@@ -67,9 +69,11 @@ def write_cut_sheet(path):
          [("rect", (IN_W - ACT_W) / 2, ACT_Y0, ACT_W, ACT_D), ("circle", IN_W - 26, IN_D - 26, 7)]),
         ("SIDE L", EXT_D, EXT_H, []),
         ("SIDE R", EXT_D, EXT_H, []),
-        ("BACK, seen from the front (slot = USB power in, Pi side)", IN_W, EXT_H,
-         [("rect", SLOT_X, SLOT_TOP, SLOT_W, SLOT_H)]),
-        ("CAP FRONT (24 mm button hole)", IN_W, CAP_H, [("circle", IN_W - 30, CAP_H / 2, 12)]),
+        ("BACK, seen from the front (slot = USB power in, Pi side; keep the hatch piece)", IN_W, EXT_H,
+         [("rect", SLOT_X, SLOT_TOP, SLOT_W, SLOT_H),
+          ("rect", (IN_W - HATCH_W) / 2, EXT_H - HATCH_H, HATCH_W, HATCH_H)]),
+        ("CAP FRONT (24 mm button, two 5 mm LED holes)", IN_W, CAP_H,
+         [("circle", IN_W - 30, CAP_H / 2, 12)] + [("circle", LED_X, CAP_H - z, 2.5) for z in LED_Z]),
         ("CAP LID (top edge of drawing = front)", IN_W, IN_D,
          [("rect", VENT_X0 + i * VENT_PITCH, VENT_Y0, VENT_W, VENT_D) for i in range(6)]),
         ("VALANCE", IN_W, VALANCE_H, []),
@@ -193,6 +197,7 @@ def build():
         "org": mat("wire orange", (0.95, 0.35, 0.02), rough=0.5),
         "gry": mat("wire grey", (0.4, 0.4, 0.42), rough=0.5),
         "pur": mat("wire purple", (0.4, 0.05, 0.6), rough=0.5),
+        "brn": mat("wire brown", (0.35, 0.17, 0.05), rough=0.5),
         "term": mat("terminal block", (0.05, 0.35, 0.6), rough=0.5),
         "cable": mat("cable grey", (0.08, 0.08, 0.09), rough=0.6),
         "button": mat("arcade button", (0.9, 0.1, 0.5), rough=0.3, emission=(1, 0.2, 0.6), strength=2.0),
@@ -319,10 +324,18 @@ def build():
     sx0, sx1 = X0 + SLOT_X, X0 + SLOT_X + SLOT_W
     sz1 = EXT_H - SLOT_TOP
     sz0 = sz1 - SLOT_H
-    part("back", [box_min("Back", X0, IN_D, 0, X1, EXT_D, sz0, M["board"]),
+    hx0, hx1 = -HATCH_W / 2, HATCH_W / 2
+    part("back", [box_min("Back", X0, IN_D, HATCH_H, X1, EXT_D, sz0, M["board"]),
+                  box_min("Back left of hatch", X0, IN_D, 0, hx0, EXT_D, HATCH_H, M["board"]),
+                  box_min("Back right of hatch", hx1, IN_D, 0, X1, EXT_D, HATCH_H, M["board"]),
                   box_min("Back top", X0, IN_D, sz1, X1, EXT_D, EXT_H, M["board"]),
                   box_min("Back slot left", X0, IN_D, sz0, sx0, EXT_D, sz1, M["board"]),
                   box_min("Back slot right", sx1, IN_D, sz0, X1, EXT_D, sz1, M["board"])], (0, 150, 0))
+    # the cut-out piece goes back in as a push-fit hatch with a tape pull-tab
+    M["hatch"] = mat("service hatch", (0.03, 0.03, 0.035), rough=0.9)
+    part("hatch", [box_min("Service hatch", hx0 + 0.3, IN_D, 0, hx1 - 0.3, EXT_D, HATCH_H - 0.3, M["hatch"]),
+                   box_min("Hatch pull tab", -8, EXT_D, HATCH_H - 22, 8, EXT_D + 0.6, HATCH_H - 6, M["wht"])],
+         (0, 230, 0))
     # roof = four strips around the lit-area window (no booleans needed)
     wx0, wx1 = -ACT_W / 2, ACT_W / 2
     roof = [box_min("Roof front", X0, 0, Z_ROOF, X1, ACT_Y0, Z_CAP, M["board"]),
@@ -392,15 +405,16 @@ def build():
     pz.append(box("micro USB pwr", (8, 5.6, 2.6), (pzx + 22, pzy - 14.5, pzz + 2.1), M["metal"], "Electronics"))
     part("pi", pz, (0, -260, 200))
 
-    # INA226 module (in the cap next to the Pi: short 5 V path). Logic header on the
-    # left edge (VCC, GND, SCL, SDA from front to back), VIN+/VIN- screw terminal on the right.
-    inz = Z_CAP + 1.8
-    INA = {"VCC": (24.5, 186.19), "GND": (24.5, 188.73), "SCL": (24.5, 191.27), "SDA": (24.5, 193.81),
-           "VIN+": (53.5, 186.5), "VIN-": (53.5, 193.5)}
-    ina = [box("INA226 module", (36, 21, 1.6), (40, 190, inz), M["pcb_p"], "Electronics", bevel=0.8),
-           box("INA226 IC", (3, 3, 1), (38, 190, inz + 1.3), M["chip"], "Electronics"),
-           box("shunt R100", (6.3, 3.2, 0.8), (44, 184, inz + 1.2), M["chip"], "Electronics"),
-           box("INA226 terminal", (7, 13, 7), (53.5, 190, inz + 4.3), M["term"], "Electronics")]
+    # INA226 module along the back edge of the cap, right of the Pi (short 5 V path), leaving
+    # room in front of it for the calibration board. Logic header on its left edge (VCC, GND,
+    # SCL, SDA from front to back), VIN+/VIN- screw terminal on the right.
+    inz, icx, icy = Z_CAP + 1.8, 42.0, 206.5
+    INA = {"VCC": (icx - 15.5, icy - 3.81), "GND": (icx - 15.5, icy - 1.27), "SCL": (icx - 15.5, icy + 1.27),
+           "SDA": (icx - 15.5, icy + 3.81), "VIN+": (icx + 13.5, icy - 3.5), "VIN-": (icx + 13.5, icy + 3.5)}
+    ina = [box("INA226 module", (36, 21, 1.6), (icx, icy, inz), M["pcb_p"], "Electronics", bevel=0.8),
+           box("INA226 IC", (3, 3, 1), (icx - 2, icy, inz + 1.3), M["chip"], "Electronics"),
+           box("shunt R100", (6.3, 3.2, 0.8), (icx + 4, icy - 6, inz + 1.2), M["chip"], "Electronics"),
+           box("INA226 terminal", (7, 13, 7), (icx + 13.5, icy, inz + 4.3), M["term"], "Electronics")]
     for k in ("VCC", "GND", "SCL", "SDA"):
         ina.append(box(f"INA226 pin {k}", (0.64, 0.64, 7), (*INA[k], inz + 3.5), M["gold"], "Electronics"))
     ina_top = {k: (x, y, inz + 7 if k.startswith("VIN") else inz + 6.5) for k, (x, y) in INA.items()}
@@ -416,6 +430,22 @@ def build():
     for k, lp in enumerate(legs):
         btn.append(box(f"Button leg {k}", (2.5, 6, 0.6), lp, M["metal"]))
     part("button", btn, (0, -60, 250))
+
+    # Two 5 mm LEDs in the cap front, top left: green = measuring, red = ready.
+    # Driven by the Pi through 330 ohm resistors on the calibration board.
+    M["led_g"] = mat("LED green", (0.1, 0.9, 0.2), emission=(0.1, 1, 0.2), strength=3.0)
+    M["led_r"] = mat("LED red", (0.95, 0.1, 0.05), emission=(1, 0.1, 0.05), strength=3.0)
+    leds, led_legs = [], {}
+    for k, (nm, z) in enumerate(zip(("green", "red"), LED_Z)):
+        lx, lz = X0 + LED_X, Z_CAP + z
+        leds.append(cyl(f"LED {nm}", 2.5, 7, (lx, 1.0, lz), M["led_g" if k == 0 else "led_r"], rot=(math.pi / 2, 0, 0)))
+        leds.append(cyl(f"LED {nm} rim", 2.9, 1.0, (lx, -0.6, lz), M["led_g" if k == 0 else "led_r"],
+                        rot=(math.pi / 2, 0, 0)))
+        for j, dx in enumerate((-1.27, 1.27)):            # anode (long leg) left, cathode right
+            leds.append(box(f"LED {nm} leg {j}", (0.5, 9 if j == 0 else 7.5, 0.5), (lx + dx, T_WALL + 4, lz),
+                            M["metal"]))
+            led_legs[(nm, "anode" if j == 0 else "cathode")] = (lx + dx, T_WALL + 8, lz)
+    part("leds", leds, (0, -60, 250))
 
     # ---------------------------------------------------------------- the mint tin + Pico behind the ghost
     TIN_W, TIN_D, TIN_H = 95.0, 61.0, 21.0
@@ -500,17 +530,31 @@ def build():
 
     # Pico on rows 1-20, USB end to the left; pins in column c (front, pins 1-20)
     # and column h (back, pins 40..21). Pin 1 = GP0 at row 1, front.
-    pc = []
+    # The Pico 2 (RP2350) has the same footprint and pinout: it swaps into the same holes.
     pcx, pcy, pcz = row_x(10.5), bby, bb_top + 3.0
-    pc.append(box("Raspberry Pi Pico", (51, 21, 1.0), (pcx, pcy, pcz), M["pcb_g"], "Tin", bevel=0.8))
-    pc.append(box("RP2040", (7, 7, 1), (pcx + 2, pcy, pcz + 1), M["chip"], "Tin"))
-    pc.append(box("Pico USB", (8, 6, 3), (pcx - 24, pcy, pcz + 2), M["metal"], "Tin"))
-    pc.append(box("Pico LED", (1.5, 1, 0.6), (pcx - 17, pcy + 6, pcz + 0.9), M["led"], "Tin"))
-    for c in "ch":
-        pc.append(box(f"Pico header {c}", (50.8, 2.5, 2.5), (pcx, col_y(c), bb_top + 1.25), M["chip"], "Tin"))
-        for r in range(1, 21):
-            pc.append(box(f"pico pin {c}{r}", (0.64, 0.64, 8), (row_x(r), col_y(c), bb_top + 1), M["gold"], "Tin"))
-    part("pico", pc, (340, -150, 0))
+
+    def make_pico(tag, pcb, chip_name):
+        pc = [box(f"Raspberry Pi {tag}", (51, 21, 1.0), (pcx, pcy, pcz), pcb, "Tin", bevel=0.8),
+              box(f"{chip_name}", (7, 7, 1), (pcx + 2, pcy, pcz + 1), M["chip"], "Tin"),
+              box(f"{tag} USB", (8, 6, 3), (pcx - 24, pcy, pcz + 2), M["metal"], "Tin"),
+              box(f"{tag} LED", (1.5, 1, 0.6), (pcx - 17, pcy + 6, pcz + 0.9), M["led"], "Tin")]
+        for c in "ch":
+            pc.append(box(f"{tag} header {c}", (50.8, 2.5, 2.5), (pcx, col_y(c), bb_top + 1.25), M["chip"], "Tin"))
+            for r in range(1, 21):
+                pc.append(box(f"{tag} pin {c}{r}", (0.64, 0.64, 8), (row_x(r), col_y(c), bb_top + 1), M["gold"],
+                              "Tin"))
+        return pc
+    part("pico", make_pico("Pico", M["pcb_g"], "RP2040"), (340, -150, 0))
+    M["pcb_g2"] = mat("PCB green (Pico 2)", (0.01, 0.17, 0.06), rough=0.45)
+    p2 = make_pico("Pico 2", M["pcb_g2"], "RP2350")
+    p2.append(text("Pico 2 label", "PICO 2", (pcx + 13, pcy, pcz + 0.56), 3.2, M["wht"], "Tin", rot=(0, 0, 0)))
+    part("pico2", p2, (340, -150, 0))
+
+    # micro-USB to USB-A cable: only to flash the .uf2 from a laptop (step 4), then unplugged
+    part("flash cable", [box("Flash cable plug", (9, 7, 4), (pcx - 30, pcy, pcz + 2), M["chip"], "Tin"),
+                         wire("Flash cable (micro-USB to USB-A)",
+                              [(pcx - 34, pcy, pcz + 2), (pcx - 60, pcy, pcz + 8), (pcx - 110, pcy - 30, 2),
+                               (pcx - 190, pcy - 60, 1)], M["cable"], radius=1.6, collection="Tin")], (0, 0, 0))
 
     # 1N5819: anode in the back + rail at row 6, cathode (band) in j2 -> same strip as h2 = pin 39, VSYS
     M["diode_band"] = mat("diode band", (0.85, 0.85, 0.85), metallic=0.5, rough=0.3)
@@ -527,49 +571,191 @@ def build():
                                  tuple(pk)], M["metal"], radius=0.3, collection="Tin")]
     part("diode", dio, (340, -150, 0))
 
+    def jumper(name, a_xy, b_xy, material, h=6.0, collection="Tin"):
+        """A short breadboard jumper arching between two holes."""
+        (ax, ay), (bx, by) = a_xy, b_xy
+        mx, my = (ax + bx) / 2, (ay + by) / 2
+        return wire(name, [(ax, ay, bb_top + 0.3), (ax, ay, bb_top + h * 0.6), (mx, my, bb_top + h),
+                           (bx, by, bb_top + h * 0.6), (bx, by, bb_top + 0.3)], material, radius=0.55,
+                    collection=collection)
+
+    def hole(r, c):
+        return (row_x(r), col_y(c))
+
+    def to92(name, rows, colm, material, flat_back=False):
+        """TO-92 package (regulator / temperature probe) standing on three legs in one column."""
+        x = row_x(rows[1])
+        y = col_y(colm)
+        out = [box(name, (4.8, 3.7, 4.8), (x, y, bb_top + 3.2 + 2.4), material, "Tin", bevel=0.4)]
+        for k, r in enumerate(rows):
+            out.append(box(f"{name} leg {k}", (0.45, 0.45, 3.6), (row_x(r), y, bb_top + 1.6), M["metal"], "Tin"))
+        return out
+
+    # MCP1700-3302 3.3 V regulator for the chip-only power path, rows 24-26 front:
+    # b24 GND, b25 VIN, b26 VOUT (flat face to the front). 1 uF ceramics: d24-d25 (in), e24-e26 (out).
+    # Its GND row joins Pico pin 18 (GND) with a short black link a24 -> a18.
+    M["cap_cer"] = mat("ceramic capacitor", (0.85, 0.65, 0.1), rough=0.4)
+    ldo = to92("MCP1700 3.3 V regulator", (24, 25, 26), "b", M["chip"])
+    for nm, (r0, r1, c) in (("C1 1uF in", (24, 25, "d")), ("C2 1uF out", (24, 26, "e"))):
+        xm = (row_x(r0) + row_x(r1)) / 2
+        ldo.append(box(nm, (3.8, 2.2, 3.8), (xm, col_y(c), bb_top + 5.2), M["cap_cer"], "Tin", bevel=0.6))
+        ldo.append(wire(nm + " legs", [(row_x(r0), col_y(c), bb_top), (row_x(r0), col_y(c), bb_top + 3.5),
+                                       (xm, col_y(c), bb_top + 4.5), (row_x(r1), col_y(c), bb_top + 3.5),
+                                       (row_x(r1), col_y(c), bb_top)], M["metal"], radius=0.25, collection="Tin"))
+    ldo.append(jumper("LDO GND link a24-a18", hole(24, "a"), hole(18, "a"), M["blk"], h=4))
+    part("ldo", ldo, (340, -150, 0))
+
+    # DS18B20 temperature probe beside the Pico's far end, i22 GND, i23 DQ, i24 VDD;
+    # its GND row joins Pico pin 23 (GND, back row 18) with a link j22 -> j18.
+    tp = to92("DS18B20 temperature probe", (22, 23, 24), "i", M["chip"])
+    tp.append(jumper("Probe GND link j22-j18", hole(22, "j"), hole(18, "j"), M["blk"], h=4))
+    part("temp probe", tp, (340, -150, 0))
+
+    # Chip-only power mode (fitted later through the service hatch): 3V3_EN (pin 37, j4) to
+    # GND (pin 38, j3), and the regulator's VOUT (a26) to the Pico's 3V3 pin (pin 36, j5).
+    # The red supply jumper then moves from the + rail to the regulator's VIN (a25).
+    part("chip-only links", [jumper("EN link j4-j3", hole(4, "j"), hole(3, "j"), M["gry"], h=3),
+                             wire("3V3 link a26-j5", [(row_x(26), col_y("a"), bb_top + 0.3),
+                                                       (row_x(26), col_y("a") - 3, bb_top + 9),
+                                                       (row_x(23), col_y("j") + 6, bb_top + 14),
+                                                       (row_x(5), col_y("j") + 4, bb_top + 9),
+                                                       (row_x(5), col_y("j"), bb_top + 0.3)],
+                                  M["wht"], radius=0.55, collection="Tin")], (0, 0, 0))
+
     # breadboard holes the Pi's wires land in
     LAND = {"5V": (row_x(10), rail_y("back +")), "GND": (row_x(3), col_y("a")), "TX": (row_x(2), col_y("a")),
-            "RX": (row_x(1), col_y("a")), "MARKER": (row_x(4), col_y("a"))}
+            "RX": (row_x(1), col_y("a")), "MARKER": (row_x(4), col_y("a")),
+            "DQ": (row_x(23), col_y("j")), "VDD": (row_x(24), col_y("j")),
+            "5V chip-only": (row_x(25), col_y("a"))}
+
+    # ---------------------------------------------------------------- calibration board (cap, lid off)
+    # A 170-point mini breadboard in front of the INA226. Rows 1-17 along x; a-e front, f-j back.
+    #   front  r1 OUT  (meter VIN- arrives at a1, the tin's red supply jumper plugs in at c1)
+    #          r3 GND  (Pi pin 20), bridged to the back half by a link e3-f3
+    #          rows 6/9 parked 470 R, rows 11/14 parked 220 R, rows 15-17 the 1 k pot (wiper r16):
+    #          they touch nothing until calibrate.py asks you to move a leg into OUT / GND.
+    #   back   r1 3V3 (Pi pin 17 + probe VDD), r2 DQ (Pi pin 7 + probe DQ), 4.7 k pull-up g1-g2
+    #          r3 GND, r6 GPIO22 -> 330 R g6-g9 -> r9 green LED,  r11 GPIO23 -> 330 R g11-g14 -> r14 red LED
+    cbx, cby, CB_H = 15.0, 169.0, 8.5
+    cb_top = Z_CAP + CB_H
+    cb_x = lambda r: cbx - 20.32 + (r - 1) * 2.54
+    cb_y = lambda c: cby + COL[c]
+    cb_hole = lambda r, c: (cb_x(r), cb_y(c), cb_top)
+    M["res"] = mat("resistor body", (0.78, 0.66, 0.45), rough=0.5)
+    cb = [box("Calibration board (170 points)", (46, 35, CB_H), (cbx, cby, Z_CAP + CB_H / 2), M["bb"],
+              "Electronics", bevel=0.6),
+          box("Calibration board channel", (44, 2.6, 0.8), (cbx, cby, cb_top - 0.3), M["chip"], "Electronics")]
+    meh = bpy.data.meshes.new("cal board holes")
+    bmc = bmesh.new()
+    for r in range(1, 18):
+        for c in "abcdefghij":
+            res_ = bmesh.ops.create_cube(bmc, size=1.0)
+            for v in res_["verts"]:
+                v.co.x = v.co.x * MM + cb_x(r) * MM
+                v.co.y = v.co.y * MM + cb_y(c) * MM
+                v.co.z = v.co.z * 0.6 * MM + (cb_top - 0.2) * MM
+    bmc.to_mesh(meh)
+    bmc.free()
+    cbh = bpy.data.objects.new("Calibration board holes", meh)
+    cbh.data.materials.append(M["chip"])
+    col("Electronics").objects.link(cbh)
+    cb.append(cbh)
+    for txt, r, c, dy in (("OUT", 1, "a", -4.0), ("GND", 3, "a", -4.0), ("470R", 7.5, "a", -4.0),
+                          ("220R", 12.5, "a", -4.0), ("POT", 16, "a", -4.0), ("3V3", 1, "j", 4.0),
+                          ("DQ", 2.6, "j", 6.5), ("LED", 11, "j", 4.0)):
+        cb.append(text(f"cal label {txt}", txt, ((cb_x(1) + cb_x(2)) / 2 + (r - 1.5) * 2.54, cb_y(c) + dy,
+                                                 cb_top + 0.06), 2.2, M["print"], "Electronics", rot=(0, 0, 0)))
+
+    def resistor(name, h0, h1, material=None, upright=False):
+        (x0, y0, z0), (x1, y1, _) = cb_hole(*h0), cb_hole(*h1)
+        out = []
+        if upright:                                 # one leg folded back over a standing body
+            out.append(cyl(name, 1.1, 6.0, (x0, y0, z0 + 4.2), material or M["res"]))
+            out.append(wire(name + " legs", [(x0, y0, z0), (x0, y0, z0 + 7.6), ((x0 + x1) / 2, (y0 + y1) / 2,
+                                                                                z0 + 8.4), (x1, y1, z0 + 6),
+                                             (x1, y1, z0)], M["metal"], radius=0.25, collection="Electronics"))
+            return out
+        xm, ym = (x0 + x1) / 2, (y0 + y1) / 2
+        body = cyl(name, 1.1, 6.0, (xm, ym, z0 + 3), material or M["res"])
+        body.rotation_euler = Vector((x1 - x0, y1 - y0, 0)).to_track_quat("Z", "Y").to_euler()
+        out += [body, wire(name + " legs", [(x0, y0, z0), (x0, y0, z0 + 3), (x1, y1, z0 + 3), (x1, y1, z0)],
+                           M["metal"], radius=0.25, collection="Electronics")]
+        return out
+    cb += resistor("R_A 470 ohm (parked)", (6, "c"), (9, "c"))
+    cb += resistor("R_B 220 ohm (parked)", (11, "c"), (14, "c"))
+    cb += resistor("Pull-up 4.7k", (1, "g"), (2, "g"), upright=True)
+    cb += resistor("LED resistor green 330", (6, "g"), (9, "g"))
+    cb += resistor("LED resistor red 330", (11, "g"), (14, "g"))
+    px = cb_x(16)
+    cb.append(box("Pot 1k", (9.5, 7, 6.5), (px, cb_y("b"), cb_top + 3.6), M["pcb_b"], "Electronics", bevel=0.5))
+    cb.append(cyl("Pot 1k knob", 2.2, 6, (px, cb_y("b"), cb_top + 9.5), M["wht"]))
+    for k, r in enumerate((15, 16, 17)):
+        cb.append(box(f"Pot leg {k}", (0.6, 0.6, 3), (cb_x(r), cb_y("b"), cb_top + 0.3), M["metal"],
+                      "Electronics"))
+    cb.append(wire("Cal bridge e3-f3", [cb_hole(3, "e"), (cb_x(3), cb_y("e"), cb_top + 3),
+                                        (cb_x(3), cb_y("f"), cb_top + 3), cb_hole(3, "f")], M["blk"], radius=0.55))
+    part("cal board", cb, (-60, -200, 220))
 
     # ---------------------------------------------------------------- wiring (Pi header -> roof hole -> tin)
-    hole = (IN_W / 2 - 26, IN_D - 26)
-    grom = cyl("Grommet", 7, T_WALL + 1, (hole[0], hole[1], Z_ROOF + T_WALL / 2), M["chip"], "Enclosure")
+    rhole = (IN_W / 2 - 26, IN_D - 26)
+    grom = cyl("Grommet", 7, T_WALL + 1, (rhole[0], rhole[1], Z_ROOF + T_WALL / 2), M["chip"], "Enclosure")
     part("roof", grom, (0, 0, 75))
-    # The five Pico jumpers are drawn from the tin END (index 0) up to the Pi, so the
-    # animation can show them plugged in first (step 9), fed through the roof (step 12)
-    # and finally connected (step 18). Control points, tin end first:
+    # The seven tin jumpers are drawn from the tin END (index 0) up to the cap, so the
+    # animation can show them plugged in first, fed through the roof, and connected last.
+    # Control points, tin end first:
     #   0 hole, 1 just above, 2 arc over the tin, 3 LOOSE END gathered at the back right,
-    #   4 under the roof hole, 5 just above the roof, 6 arc over the meter, 7 the Pi / meter pin
-    colours = [("5V", "red", None), ("GND", "blk", 9), ("TX", "yel", 8), ("RX", "grn", 10), ("MARKER", "blu", 11)]
+    #   4 under the roof hole, 5 just above the roof, 6 arc in the cap, 7 above the pin, 8 the pin
+    # 5V goes to the calibration board's OUT row (= meter VIN-): the Pico's supply always
+    # passes the meter, never straight from the Pi.
+    colours = [("5V", "red", cb_hole(1, "c")), ("GND", "blk", pi_pin(9)), ("TX", "yel", pi_pin(8)),
+               ("RX", "grn", pi_pin(10)), ("MARKER", "blu", pi_pin(11)),
+               ("DQ", "gry", cb_hole(2, "i")), ("VDD", "org", cb_hole(1, "i"))]
     WIRE_LOOSE, WIRE_ROOF = 3, 5               # control-point indices read by assembly_animation.py
-    wires = []
-    for k, (nm, cm, pin) in enumerate(colours):
-        off = (k - 2) * 1.8
-        # the Pico's 5 V comes out of the meter's VIN-, never straight from the Pi
-        start = ina_top["VIN-"] if pin is None else pi_pin(pin)
+
+    def tin_wire(name, nm, cm, start, k, n):
+        off = (k - (n - 1) / 2) * 1.5
         ex, ey = LAND[nm]
         pts = [(ex, ey, bb_top + 0.5), (ex, ey, bb_top + 7),
-               (ex + 4, ey + (6 if ey > bby else -12), T_WALL + TIN_H + 14),
-               (hole[0] - 8 + off, hole[1] + 6, T_WALL + 40),
-               (hole[0] + off * 0.6, hole[1], Z_ROOF - 10), (hole[0] + off * 0.6, hole[1], Z_CAP + 18),
-               (hole[0] - 25, hole[1] - 5 + k, Z_CAP + 25), (start[0], start[1], start[2] + 6), start]
-        wires.append(wire(f"wire {nm}", pts, M[cm]))
-    # screen cables: mini-HDMI and the screen's touch/power USB via the OTG port
+               (ex + 4, ey + (6 if ey > bby else -12), T_WALL + TIN_H + 30),
+               (rhole[0] - 8 + off, rhole[1] + 6, T_WALL + 62),
+               (rhole[0] + off * 0.6, rhole[1], Z_ROOF - 10), (rhole[0] + off * 0.6, rhole[1], Z_CAP + 18),
+               ((rhole[0] + start[0]) / 2, (rhole[1] + start[1]) / 2 + k * 0.8, Z_CAP + 30 + k * 0.6),
+               (start[0], start[1], start[2] + 6), start]
+        return wire(name, pts, M[cm])
+    wires = [tin_wire(f"wire {nm}", nm, cm, st, k, len(colours)) for k, (nm, cm, st) in enumerate(colours)]
+    # the same red jumper in chip-only mode: moved to the regulator's VIN (a25) via the hatch
+    part("chip-only links", tin_wire("wire 5V (chip-only mode)", "5V chip-only", "red", cb_hole(1, "c"), 0,
+                                     len(colours)), (0, 0, 0))
+
+    # screen cables: mini-HDMI, and the screen's USB through the OTG adapter and the
+    # micro-USB to USB-A cable (it powers the screen and carries its touch data)
     drv_top = Z_CAP + SCR_T + DRV_T
+    otg = box("OTG adapter", (9, 12, 6), (pzx + 9, pzy - 22, pzz + 2.4), M["chip"], "Electronics")
     wires.append(wire("HDMI cable", [(pzx - 20, pzy - 18, pzz + 2.4), (pzx - 26, pzy - 40, pzz + 18),
                                      (-20, scr_cy + 34, drv_top + 4), (-20, scr_cy + 22, drv_top)],
                       M["cable"], radius=2.2))
-    wires.append(wire("Screen USB cable", [(pzx + 9, pzy - 18, pzz + 2.1), (pzx + 12, pzy - 36, pzz + 14),
-                                           (20, scr_cy + 36, drv_top + 4), (20, scr_cy + 24, drv_top)],
+    wires.append(wire("Screen USB cable", [(pzx + 9, pzy - 28, pzz + 2.4), (pzx + 10, pzy - 44, pzz + 16),
+                                           (14, scr_cy + 38, drv_top + 6), (20, scr_cy + 24, drv_top)],
                       M["cable"], radius=1.6))
-    # power in: Pi PWR port -> out through the cable slot in the back wall -> down to the table
+    # power in: Pi PWR port -> out through the cable slot -> USB inline meter -> USB charger.
+    # The inline meter shows the whole demo's draw and cross-checks the INA226 (calibrate.py).
     slot_c = (X0 + SLOT_X + SLOT_W / 2, EXT_H - SLOT_TOP - SLOT_H / 2)
+    um = (slot_c[0] + 40, EXT_D + 150)
     wires.append(wire("USB power in", [(pzx + 22, pzy - 18, pzz + 2.1), (pzx + 22, pzy - 30, pzz + 10),
                                        (pzx - 10, pzy - 30, pzz + 26), (slot_c[0], IN_D - 12, slot_c[1]),
                                        (slot_c[0], EXT_D + 12, slot_c[1]), (slot_c[0] + 10, EXT_D + 60, 30),
-                                       (slot_c[0] + 30, EXT_D + 140, 1.5), (slot_c[0] + 60, EXT_D + 260, 1.5)],
+                                       (um[0], um[1] - 70, 3), (um[0], um[1] - 34, 6)],
                       M["wht"], radius=1.8))
     part("wires", wires, (0, 0, 0))
+    M["umeter"] = mat("USB meter screen", (0.05, 0.1, 0.12), emission=(0.2, 0.8, 1.0), strength=1.5)
+    usbm = [otg]
+    power = [box("USB inline meter", (24, 60, 11), (um[0], um[1], 5.5), M["chip"], "Studio", bevel=1.5),
+             box("USB meter display", (17, 24, 0.4), (um[0], um[1] + 4, 11.1), M["umeter"], "Studio"),
+             text("USB meter reading", "5.07V\n0.62A", (um[0], um[1] + 4, 11.4), 4.2, M["cyan"], "Studio",
+                  rot=(0, 0, math.pi / 2)),
+             box("USB charger 5 V", (46, 44, 26), (um[0], um[1] + 56, 13), M["wht"], "Studio", bevel=3)]
+    part("otg", usbm, (0, 0, 0))
+    part("usb meter", power, (0, 0, 0))
 
     # Pi header -> INA226: supply in, logic power and I2C (all stay inside the cap)
     meter = []
@@ -591,6 +777,30 @@ def build():
                                                  (lg[0], 60, Z_CAP + 36 - 3 * k), (lg[0], lg[1] + 6, lg[2] + 2),
                                                  (lg[0], lg[1] + 3, lg[2])], M[cm], radius=0.8))
     part("button wires", bwires, (0, 0, 0))
+
+    def cap_wire(name, st, en, cm, k=0, over=Z_CAP + 32):
+        return wire(name, [st, (st[0], st[1], st[2] + 6), ((st[0] + en[0]) / 2, (st[1] + en[1]) / 2 + k,
+                                                            over + k * 0.7), (en[0], en[1], en[2] + 6), en],
+                    M[cm], radius=0.8)
+    # meter output -> calibration board OUT, and the Pi -> calibration board
+    calw = [cap_wire("cal wire VIN- to OUT", ina_top["VIN-"], cb_hole(1, "a"), "red", 0, Z_CAP + 26)]
+    for k, (nm, cm, pin, h) in enumerate([("GND", "blk", 20, (3, "a")), ("3V3", "org", 17, (1, "j")),
+                                          ("DQ GPIO4", "gry", 7, (2, "j")), ("LED green GPIO22", "grn", 15, (6, "j")),
+                                          ("LED red GPIO23", "brn", 16, (11, "j"))]):
+        calw.append(cap_wire(f"cal wire {nm}", pi_pin(pin), cb_hole(*h), cm, k))
+    part("cal wires", calw, (0, 0, 0))
+
+    # calibration board -> the two LEDs in the cap front (anodes through the 330 R, cathodes to GND)
+    ledw = []
+    for k, (nm, cm, h, leg) in enumerate([("green +", "grn", (9, "j"), ("green", "anode")),
+                                          ("red +", "brn", (14, "j"), ("red", "anode")),
+                                          ("green -", "blk", (3, "h"), ("green", "cathode")),
+                                          ("red -", "blk", (3, "i"), ("red", "cathode"))]):
+        st, lg = cb_hole(*h), led_legs[leg]
+        ledw.append(wire(f"LED wire {nm}", [st, (st[0], st[1], st[2] + 7), (st[0] - 10, 140, Z_CAP + 37 - k),
+                                            (lg[0] + 14, 40, Z_CAP + 36 - k), (lg[0], lg[1] + 7, lg[2] + 1),
+                                            (lg[0], lg[1], lg[2])], M[cm], radius=0.7))
+    part("led wires", ledw, (0, 0, 0))
 
     # ---------------------------------------------------------------- labels on the front
     ttl = text("Front title", "SILICON NEURON", (0, -0.6, Z_CAP + CAP_H / 2 + 5), 13, M["cyan"], extrude=0.4)
@@ -675,14 +885,16 @@ def build():
     labels = [("1 floor", "floor"), ("2 side walls", "side L"), ("3 back", "back"), ("4 roof + window", "roof"),
               ("5 acrylic pane 45deg", "pane"), ("7 7in screen, face down", "display"),
               ("8 cap + lid", "cap"), ("9 Pi Zero 2 W", "pi"), ("10 INA226", "ina226"), ("11 button", "button"),
-              ("12 mint tin + Pico", "tin"), ("13 valance", "valance")]
+              ("12 mint tin + Pico", "tin"), ("13 valance", "valance"), ("14 service hatch", "hatch"),
+              ("15 calibration board", "cal board"), ("16 status LEDs", "leds")]
     cam_rot = cams["exploded"].rotation_euler.copy()
     for txt, key in labels:
         objs, off = parts[key]
         c = sum((o.location for o in objs), Vector()) / len(objs) / MM + Vector(off)
         top = max(o.location.z + o.dimensions.z / 2 for o in objs) / MM + off[2]
         lift = {"side L": (0, -60, 0), "floor": (150, -40, -30), "pane": (0, -40, -20), "back": (150, 0, -70),
-                "tin": (0, -40, 62), "button": (70, -20, -12), "ina226": (70, 0, -18)}.get(key, (0, 0, 0))
+                "tin": (0, -40, 62), "button": (70, -20, -12), "ina226": (70, 0, -18),
+                "hatch": (0, 0, -20), "cal board": (-40, 0, -6), "leds": (-60, 0, 0)}.get(key, (0, 0, 0))
         pos = Vector((c.x, c.y, top + 16)) + Vector(lift)
         text("xl " + txt, txt, pos, 12, M["label"], "Exploded labels", rot=cam_rot)
 
@@ -702,6 +914,13 @@ def build():
                 c.hide_render = not visible
                 c.hide_viewport = not visible
 
+    # alternates, shown only by the assembly animation: Pico 2, the chip-only power
+    # links (with the red jumper's moved end) and the flashing cable
+    ALTERNATES = ("pico2", "chip-only links", "flash cable")
+    for key in ALTERNATES:
+        for ob in parts[key][0]:
+            ob.hide_render = ob.hide_viewport = True
+
     # default viewport state: assembled, diagram hidden
     set_exploded(False)
     show(["Diagram", "Exploded labels"], False)
@@ -710,6 +929,7 @@ def build():
     build.parts = parts                     # read by assembly_animation.py
     build.cams = cams
     build.wire_idx = (WIRE_LOOSE, WIRE_ROOF)
+    build.alternates = ALTERNATES
     return scene, cams, set_exploded, show, bpy
 
 

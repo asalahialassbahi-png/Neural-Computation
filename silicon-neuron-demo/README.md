@@ -6,7 +6,9 @@ spikes, membrane voltages and measured energy into a floating "hologram" in a
 45-degree Pepper's-ghost box.
 
 The full build guide (parts, optics, wiring, maths, demo script) is the Claude
-Doc that accompanies this folder. This README is the command reference.
+Doc that accompanies this folder. **`HARDWARE.md` is the v2 hardware: the upgrade
+parts list, the complete wiring tables, calibration and the chip-only power mode.**
+This README is the command reference.
 
 ## Folder map
 
@@ -50,6 +52,10 @@ python3 analyse.py results/bench.csv --plots
 python3 hologram.py             # starts automatically at boot after setup
 ```
 
+Before each measuring session, calibrate the meter (lid off, ~5 min; see HARDWARE.md):
+`python3 calibrate.py`. For the chip-only power path add `--rail 3v3 --v-rail <volts>` to
+`bench.py`. Temperature, board (Pico / Pico 2) and power path are logged with every trial.
+
 No hardware yet? Everything on the Pi side runs with `--sim` (made-up energy
 numbers — never quote them):
 
@@ -61,9 +67,10 @@ python3 bench.py --sim --trials 3
 Blender (4.2 or newer): Scripting tab → open `blender/build_demo.py` → Run
 Script. Terminal: `blender -b -P blender/build_demo.py -- --render`.
 
-Step-by-step assembly animation (LEGO-manual style, 22 steps: 0 cover, 1 kit, 2-21 the build):
+Step-by-step assembly animation (LEGO-manual style, 28 steps: 0 cover, 1 kit, 2-24 the build,
+25-26 the optional Pico 2 swap and chip-only mode through the service hatch, 27 power on):
 
-- `blender/renders/assembly.mp4` — 1280x720, 24 fps, 88 s; one chapter per step, so VLC or
+- `blender/renders/assembly.mp4` — 1280x720, 24 fps, 112 s; one chapter per step, so VLC or
   QuickTime can jump straight to a step; a keyframe every second for smooth scrubbing.
 - `blender/renders/assembly_booklet.pdf` — one page per step (the settled frame at its end).
 - `blender/silicon_neuron_assembly.blend` — open it, press Numpad 0 to look

@@ -92,9 +92,15 @@ lid = [o for o in parts["cap"][0] if o.name.startswith("Cap lid")]
 wire_names = {w.name: w for w in parts["wires"][0]}
 screen_cables = [wire_names.pop("HDMI cable"), wire_names.pop("Screen USB cable")]
 usb = [wire_names.pop("USB power in")]
-pico_wires = list(wire_names.values())          # drawn from the tin end (control point 0) to the Pi
+pico_wires = list(wire_names.values())          # drawn from the tin end (control point 0) to the cap
+red_wire = obj("wire 5V")
 meter_wires = parts["meter wires"][0]
 button_wires = parts["button wires"][0]
+cal_wires = parts["cal wires"][0]
+led_wires = parts["led wires"][0]
+chip_red = obj("wire 5V (chip-only mode)")      # the same red jumper, moved to the regulator's VIN
+chip_links = [o for o in parts["chip-only links"][0] if o is not chip_red]
+flash = parts["flash cable"][0]
 WIRE_LOOSE, WIRE_ROOF = bd.build.wire_idx
 
 # screen "off" cover under the lit area, removed at power-on
@@ -144,14 +150,21 @@ R["tin"] = rig("tin", group("tin"), R["tin asm"])
 R["breadboard"] = rig("breadboard", group("breadboard"), R["tin asm"])
 R["diode"] = rig("diode", group("diode"), R["tin asm"])
 R["pico"] = rig("pico", group("pico"), R["tin asm"])
-for k in ("floor", "side L", "side R", "back", "pane", "roof", "valance", "display", "pi", "ina226", "button"):
+R["pico2"] = rig("pico2", group("pico2"), R["tin asm"])
+R["ldo"] = rig("ldo", group("ldo"), R["tin asm"])
+R["temp probe"] = rig("temp probe", group("temp probe"), R["tin asm"])
+R["chip links"] = rig("chip links", chip_links, R["tin asm"])
+R["flash cable"] = rig("flash cable", flash, R["tin asm"])
+for k in ("floor", "side L", "side R", "back", "hatch", "pane", "roof", "valance", "display", "pi", "ina226",
+          "cal board", "button", "leds", "otg", "usb meter"):
     R[k] = rig(k, group(k))
 R["rails L"] = rig("rails L", group("rails"))
 R["rails R"] = rig("rails R", group("rails R"))
 R["cap front"] = rig("cap front", cap_front)
 R["lid"] = rig("lid", lid)
 
-WIRES = pico_wires + meter_wires + screen_cables + button_wires + usb
+WIRES = pico_wires + [chip_red] + meter_wires + screen_cables + cal_wires + button_wires + led_wires + usb
+ALT = [o for k in bd.build.alternates for o in parts[k][0]]     # Pico 2, chip-only links, flash cable
 for w in WIRES:
     # SEGMENTS: factor k / (points - 1) ends exactly on control point k
     w.data.bevel_factor_mapping_start = w.data.bevel_factor_mapping_end = "SEGMENTS"
@@ -182,29 +195,35 @@ STEPS = [
                            "their spikes and measured energy float in mid-air."],
      [], None, [], ((300, -560, 165), (0, 120, 80))),
     ("What's in the kit", ["Every part, exploded. The number on each part is the step that uses it."],
-     [], None, [], ((470, -1300, 980), (20, 40, 215))),
+     [], None, [], ((470, -1250, 930), (30, 50, 200))),
     ("Mint tin", ["Build the Pico sub-assembly on the table first.",
                   "Empty mint tin, open, lid hinge at the back."],
      ["tin"], (0, 0, 60), [], (T + Vector((150, -210, 180)), T)),
     ("Half-size breadboard", ["Peel the backing and stick the 400-point breadboard into the tin,",
                               "rows running left-right, red (+) rail at the BACK."],
      ["breadboard"], (0, 0, 60), [], (T + Vector((120, -170, 150)), T)),
-    ("Raspberry Pi Pico", ["Flash the .uf2 first (hold BOOTSEL, plug in, drag the file), unplug USB.",
-                           "Press it into rows 1-20, USB end LEFT, pins in columns c and h."],
-     ["pico"], (0, 0, 60), [], (T + Vector((115, -170, 140)), T + Vector((-12, 0, 8)))),
+    ("Raspberry Pi Pico", ["Flash it first: hold BOOTSEL, plug in the micro-USB to USB-A cable, drag the .uf2",
+                           "on, unplug. Press it into rows 1-20, USB end LEFT, pins in columns c and h."],
+     ["pico", "flash cable"], (0, 0, 60), [], (T + Vector((95, -190, 150)), T + Vector((-30, 0, 8)))),
     ("Schottky diode 1N5819", ["Plain end (anode) into the back red + rail at row 6; banded end",
                                "(cathode) into j2, the strip of Pico pin 39, VSYS."],
      ["diode"], (0, 0, 40), [], (T + Vector((-2, -78, 112)), T + Vector((-24, 8, 4)))),
+    ("Regulator and capacitors", ["MCP1700 into b24 b25 b26, flat face to the FRONT (GND, VIN, VOUT). 1 uF capacitors",
+                                  "d24-d25 and e24-e26; black link a24 to a18. Idle until chip-only mode."],
+     ["ldo"], (0, 0, 40), [], (T + Vector((60, -80, 95)), T + Vector((24, -8, 4)))),
+    ("Temperature probe", ["DS18B20 into i22 i23 i24, flat face to the FRONT (GND, DQ, VDD);",
+                           "black link j22 to j18 (Pico GND). It logs the chip's temperature."],
+     ["temp probe"], (0, 0, 40), [], (T + Vector((55, -60, 100)), T + Vector((22, 14, 4)))),
     ("Floor", ["Black foam board, 196 x 220 mm, flat on the table."],
      ["floor"], None, [], ((420, -520, 420), (0, 110, 40))),
     ("Side walls", ["Hot-glue both 225 x 180 mm sides against the floor edges.",
                     "Check the corners with a set square."],
      ["side L", "side R"], None, [], ((420, -520, 420), (0, 110, 70))),
-    ("Back wall", ["196 x 180 mm. The 24 x 12 mm cable slot goes at the TOP, on the LEFT",
-                   "(seen from the front), next to where the Pi Zero will sit."],
-     ["back"], None, [], ((380, -500, 380), (0, 130, 80))),
-    ("Place the Pico tin", ["Before the pane: tin front edge 150 mm behind the opening, centred.",
-                            "Plug the five jumpers into the + rail and a1-a4; loose ends to the back right."],
+    ("Back wall and service hatch", ["196 x 180 mm: cable slot at the TOP LEFT (seen from the front). Cut the",
+                                     "120 x 95 mm hatch at the bottom centre; push the piece back in, tape pull-tab."],
+     ["back", "hatch"], None, [], ((380, 560, 300), (0, 160, 70))),
+    ("Place the Pico tin", ["Tin front edge 150 mm behind the opening, centred. Plug in the seven jumpers: red + rail,",
+                            "black a3, yellow a2, green a1, blue a4, grey j23, orange j24. Loose ends back right."],
      ["tin asm"], None, stage(pico_wires, 0, WIRE_LOOSE), ((380, -460, 220), (0, 150, 30))),
     ("Pane rails", ["On each side wall draw a 45 degree line from the floor, 20 mm behind",
                     "the front, up to 125 mm. Glue two rails along it, 3 mm apart."],
@@ -213,7 +232,7 @@ STEPS = [
                       "It touches the floor at the front and reaches 140 mm back at the top."],
      ["pane"], (0, -120, 160), [], ((360, -380, 260), (0, 80, 60))),
     ("Roof", ["Glue the roof 125 mm above the table, screen window towards the back.",
-              "Feed the five loose jumpers up through the 14 mm hole at the back right."],
+              "Feed the seven loose jumpers up through the 14 mm hole at the back right."],
      ["roof"], None, stage(pico_wires, WIRE_LOOSE, WIRE_ROOF), ((-330, -420, 500), (10, 120, 105))),
     ("Valance", ["The 8 mm strip under the front edge of the roof hides the screen",
                  "from anyone crouching."],
@@ -221,26 +240,38 @@ STEPS = [
     ("Screen, face down", ["Lay the 7-inch screen FACE DOWN over the window, its lit area's back",
                            "edge right above the top of the pane. Tape the bezel."],
      ["display"], (0, 0, 120), [], ((250, -180, 480), (0, 100, 130))),
-    ("Pi Zero 2 W and INA226", ["Foam-tape both to the roof behind the screen:",
-                                "Pi on the left (header at the back), meter on the right."],
-     ["pi", "ina226"], (0, 0, 90), [], ((230, -40, 420), (0, 190, 135))),
+    ("Pi Zero 2 W and INA226", ["Foam-tape both to the roof behind the screen: Pi on the left (header",
+                                "at the back), the meter along the back edge on the right."],
+     ["pi", "ina226"], (0, 0, 90), [], ((230, -20, 420), (0, 190, 135))),
+    ("Calibration board", ["Mini breadboard in front of the meter. 4.7k pull-up g1-g2, 330 R g6-g9 and g11-g14,",
+                           "black link e3-f3. Park the 470 R (c6-c9), 220 R (c11-c14) and the pot (b15-b17)."],
+     ["cal board"], (0, 0, 70), [], ((110, 40, 330), (15, 170, 135))),
     ("Meter wires", ["Pi pin 2 (5 V) to VIN+ (red),  pin 1 (3.3 V) to VCC (orange),",
                      "pin 3 to SDA (white),  pin 5 to SCL (grey),  pin 6 to GND (black)."],
-     [], None, full(meter_wires), ((180, 60, 330), (0, 190, 140))),
-    ("Screen cables", ["Mini-HDMI from the Pi to the screen; screen USB to the Pi's",
-                       "middle (OTG) port with the adapter."],
-     [], None, full(screen_cables), ((230, -80, 400), (-30, 150, 140))),
-    ("Pico wires", ["Red from the + rail to meter VIN-;  a2 (yellow) to Pi pin 8,  a1 (green) to pin 10,",
-                    "a4 (blue) to pin 11,  a3 (black) to pin 9.  (Right wall hidden here.)"],
+     [], None, full(meter_wires), ((150, 80, 330), (0, 195, 140))),
+    ("Screen cables", ["Mini-HDMI from the Pi to the screen. OTG adapter in the Pi's middle port, then",
+                       "the micro-USB to USB-A cable to the screen's USB (power and touch)."],
+     ["otg"], (0, -40, 40), full(screen_cables), ((230, -80, 400), (-30, 150, 140))),
+    ("Calibration board wires", ["Short red: meter VIN- to OUT (a1). Pi pin 20 to a3 (black), 17 to j1 (orange),",
+                                 "7 to j2 (grey), 15 to j6 (green), 16 to j11 (brown)."],
+     [], None, full(cal_wires), ((120, 60, 330), (-10, 180, 135))),
+    ("Pico wires", ["Red into OUT c1 (the meter, never the Pi's 5 V). Grey to i2, orange to i1. Yellow to Pi",
+                    "pin 8, green to 10, blue to 11, black to 9. (Right wall hidden here.)"],
      [], None, stage(pico_wires, WIRE_ROOF, None), ((600, 20, 300), (0, 172, 100))),
-    ("Button and cap front", ["Fit the 24 mm button in the cap front, glue the cap front on, then",
-                              "wire Pi pin 13 (purple) and pin 14 (black) to the button's legs."],
-     ["button", "cap front"], None, full(button_wires), ((330, 470, 470), (10, 70, 140))),
-    ("Lid and power", ["Lay the lid on (leave it unglued) and run the Pi's power lead",
-                       "through the slot in the back wall to a 5 V supply."],
-     ["lid"], (0, 0, 120), full(usb), ((-420, 640, 400), (-20, 180, 90))),
-    ("Power on", ["Dim the lights. The display floats in front of the Pico that computes it.",
-                  "Press the button for the next digit."],
+    ("Button, LEDs and cap front", ["24 mm button and two 5 mm LEDs (long leg = +) into the cap front, glue it on. Purple",
+                                    "pin 13 + black 14 to the button; green j9, brown j14 to LED +; black h3, i3 to LED -."],
+     ["button", "leds", "cap front"], None, full(button_wires + led_wires), ((330, 470, 470), (10, 70, 140))),
+    ("Lid, USB meter and power", ["Lid on (unglued). Power lead out through the back slot, through the USB inline",
+                                  "meter, into a 5 V USB charger. The meter shows the whole demo's draw."],
+     ["lid", "usb meter"], (0, 0, 120), full(usb), ((-420, 760, 420), (-20, 260, 60))),
+    ("Later: swap to Pico 2", ["Pull the hatch, slide the tin out (jumpers stay plugged in; hidden here). Lift",
+                               "the Pico out, press the Pico 2 into the same holes. Flash it with its own .uf2."],
+     [], None, [], ((230, 225, 330), (0, 308, 12))),
+    ("Later: chip-only power mode", ["Red jumper from the + rail to a25 (regulator VIN), white link a26 to j5 (3V3),",
+                                     "grey link j4 to j3 (3V3_EN to GND). Run bench.py --rail 3v3."],
+     [], None, [], ((95, 240, 170), (5, 312, 8))),
+    ("Power on", ["Slide the tin back, hatch in. Dim the lights: the display floats in front of",
+                  "the Pico that computes it. Press the button for the next digit."],
      [], None, [], ((0, -620, 95), (0, 120, 80))),
 ]
 
@@ -268,39 +299,70 @@ n_steps = len(STEPS)
 scene.frame_end = n_steps * STEP
 cut_away = obj("Side R")
 
-every = [o for o in bpy.data.objects if o.type in ("MESH", "CURVE", "FONT")
+every = [o for o in bpy.data.objects if o.type in ("MESH", "CURVE", "FONT") and o not in ALT
          and o.users_collection and o.users_collection[0].name not in ("Diagram", "Exploded labels", "Studio")]
-labels = list(bpy.data.collections["Exploded labels"].objects)
 studio = [o for o in bpy.data.collections["Studio"].objects if o.type == "MESH"]
+usb_meter = [o for o in group("usb meter")]
 
-# kit labels: renumbered to the step that uses each part, plus the tin's contents
-RELABEL = {"1 floor": "6 floor", "2 side walls": "7 side walls", "3 back": "8 back", "4 roof + window": "12 roof",
-           "5 acrylic pane 45deg": "11 acrylic pane", "7 7in screen, face down": "14 7in screen",
-           "8 cap + lid": "19 cap front, 20 lid", "9 Pi Zero 2 W": "15 Pi Zero 2 W", "10 INA226": "15 INA226",
-           "11 button": "19 button", "12 mint tin + Pico": "2 mint tin", "13 valance": "13 valance"}
-for o in bpy.data.collections["Exploded labels"].objects:
-    o.data.body = RELABEL.get(o.data.body, o.data.body)
+# kit: every part exploded, labelled with the step that fits it (numbers follow STEPS,
+# so they stay right if steps are added). The build script's own labels are for the stills.
 KIT_OFF = {"rails L": Vector((-75, 0, 0)), "rails R": Vector((75, 0, 0)),
-           "breadboard": Vector((0, 0, 30)), "pico": Vector((0, 0, 58)), "diode": Vector((0, 0, 80))}
-lab_src = next(iter(bpy.data.collections["Exploded labels"].objects))
-bpy.context.view_layer.update()
-for txt, key, at in (("3 breadboard", "breadboard", (-95, -20, 0)), ("4 Pico", "pico", (-80, -20, 0)),
-                     ("5 diode", "diode", (60, 0, 8)), ("10 rails", "rails R", (0, -30, 60))):
-    lo = lab_src.copy()
-    lo.data = lab_src.data.copy()
-    lo.data.body = txt
-    ctr = sum((o.matrix_world.translation for o in all_objects_in([R[key]]) if o.type != "EMPTY"),
-              Vector()) / len([o for o in all_objects_in([R[key]]) if o.type != "EMPTY"]) / MM
-    base = ctr + KIT_OFF[key] + (TIN_OFF if key in ("breadboard", "pico", "diode") else Vector())
-    lo.location = (base + Vector(at)) * MM
-    lo.name = "xl " + txt
-    bpy.data.collections["Exploded labels"].objects.link(lo)
-labels = list(bpy.data.collections["Exploded labels"].objects)
+           "breadboard": Vector((0, 0, 30)), "pico": Vector((0, 0, 58)), "diode": Vector((0, 0, 80)),
+           "ldo": Vector((0, 0, 100)), "temp probe": Vector((0, 0, 118)), "pico2": Vector((0, -95, 0)),
+           "chip links": Vector((0, 0, 0)), "flash cable": Vector((0, 0, 0)), "otg": Vector((-60, -260, 200)),
+           "usb meter": Vector((0, 0, 0)), "cap front": Vector(parts["cap"][1]),
+           "lid": Vector(parts["cap"][1]) + Vector((0, 0, 60))}
+TIN_KIDS = ("tin", "breadboard", "diode", "pico", "pico2", "ldo", "temp probe", "chip links", "flash cable")
+
+
+def kit_off(k):
+    if k == "tin asm":
+        return TIN_OFF
+    if k in KIT_OFF:
+        return KIT_OFF[k]
+    return Vector(parts[k][1]) if k in parts and k not in TIN_KIDS else Vector((0, 0, 0))
+
+
+for o in list(bpy.data.collections["Exploded labels"].objects):
+    bpy.data.objects.remove(o)
+step_of = {}
+for i, st in enumerate(STEPS):
+    for k in st[2]:
+        step_of.setdefault(k, i)
+step_of.update({"pico2": [s[0] for s in STEPS].index("Later: swap to Pico 2")})
+KIT_LABELS = [("floor", "floor"), ("side L", "side walls"), ("back", "back wall"), ("hatch", "hatch"),
+              ("roof", "roof"), ("pane", "acrylic pane"), ("rails R", "rails"), ("valance", "valance"),
+              ("display", "7in screen"), ("pi", "Pi Zero 2 W"), ("ina226", "INA226 meter"),
+              ("cal board", "calibration board"), ("button", "button"), ("leds", "LEDs"),
+              ("cap front", "cap front"), ("lid", "lid"), ("usb meter", "USB meter + charger"),
+              ("tin", "mint tin"), ("breadboard", "breadboard"), ("pico", "Pico"), ("diode", "1N5819"),
+              ("ldo", "regulator + caps"), ("temp probe", "DS18B20"), ("pico2", "Pico 2 (later)")]
+LABEL_NUDGE = {"floor": (150, -40, -30), "side L": (0, -60, 0), "back": (150, 0, -70), "hatch": (0, 30, -60),
+               "pane": (0, -40, -20), "tin": (-110, -40, 20), "breadboard": (-110, -20, 0),
+               "pico": (-110, -20, 0), "diode": (90, 0, 0), "ldo": (110, 0, 0), "temp probe": (110, 0, 10),
+               "pico2": (-110, -10, 0), "button": (70, -20, -12), "ina226": (70, 0, -18), "leds": (-70, 0, 0),
+               "cal board": (-60, 0, 0), "usb meter": (0, 0, 20), "lid": (0, 0, 10)}
+cam_kit = STEPS[1][5]
+kit_rot = (Vector(cam_kit[1]) - Vector(cam_kit[0])).to_track_quat("-Z", "Y").to_euler()
 m_lab = bpy.data.materials.new("kit label")
 m_lab.diffuse_color = (0.02, 0.02, 0.025, 1)                  # dark text on the light background
-for o in labels:
-    o.data.materials[0] = m_lab
-    o.scale = (1.5, 1.5, 1.5)
+bpy.context.view_layer.update()
+labels = []
+for k, name in KIT_LABELS:
+    objs = [o for o in all_objects_in([R[k]]) if o.type != "EMPTY"]
+    ctr = sum((o.matrix_world.translation for o in objs), Vector()) / len(objs) / MM
+    top = max(o.matrix_world.translation.z + o.dimensions.z / 2 for o in objs) / MM
+    base = Vector((ctr.x, ctr.y, top + 16)) + kit_off(k) + (TIN_OFF if k in TIN_KIDS else Vector())
+    cu = bpy.data.curves.new("xl " + name, "FONT")
+    cu.body = f"{step_of.get(k, '')} {name}".strip()
+    cu.size = 18 * MM
+    cu.align_x, cu.align_y = "CENTER", "CENTER"
+    lo = bpy.data.objects.new("xl " + name, cu)
+    lo.data.materials.append(m_lab)
+    lo.location = (base + Vector(LABEL_NUDGE.get(k, (0, 0, 0)))) * MM
+    lo.rotation_euler = kit_rot
+    bpy.data.collections["Exploded labels"].objects.link(lo)
+    labels.append(lo)
 
 # step 0 (cover): everything assembled and powered
 f1 = 1
@@ -313,6 +375,7 @@ for w in WIRES:
     w.data.bevel_factor_end = 1.0
     w.data.keyframe_insert("bevel_factor_end", frame=f1)
 key_vis([off], f1, False)
+key_vis(ALT, f1, False)
 if ghost:
     key_vis([ghost], f1, True)
 
@@ -323,16 +386,10 @@ key_vis(WIRES, f2, False)
 if ghost:
     key_vis([ghost], f2, False)
 key_vis(labels, f2, True)
+key_vis(group("pico2"), f2, True)                # the second chip is part of the kit
 for k, r in R.items():
     key_loc(r, f2 - 1, HOME[k])
-    off_mm = TIN_OFF if k == "tin asm" else (Vector(parts[k][1]) if k in parts and k not in
-                                              ("tin", "breadboard", "diode", "pico") else Vector((0, 0, 0)))
-    if k in KIT_OFF:
-        off_mm = KIT_OFF[k]
-    if k == "cap front":
-        off_mm = Vector(parts["cap"][1])
-    if k == "lid":
-        off_mm = Vector(parts["cap"][1]) + Vector((0, 0, 60))
+    off_mm = kit_off(k)
     key_loc(r, f2 + 10, off_mm)
     key_loc(r, 2 * STEP, off_mm)
 
@@ -341,6 +398,7 @@ f3 = 2 * STEP + 1
 key_vis(labels, f3, False)
 key_vis(every, f3, False)
 key_vis(studio, f3, True)
+key_vis(usb_meter + ALT, f3, False)
 for w in WIRES:
     w.data.bevel_factor_end = 0.0
     w.data.keyframe_insert("bevel_factor_end", frame=f3)
@@ -382,6 +440,43 @@ for i, (title, lines, keys, appr, grow, cam) in enumerate(STEPS):
 
 for i, (title, *_r) in enumerate(STEPS):
     scene.timeline_markers.new(f"Step {i}: {title}", frame=i * STEP + 1)
+
+# the flashing cable is only plugged in while the Pico is flashed
+i_pico = [s[0] for s in STEPS].index("Raspberry Pi Pico")
+key_vis(flash, (i_pico + 1) * STEP + 1, False)
+
+# ---- later: service hatch. The hatch comes off, the tin slides out through it, the
+# Pico is swapped for a Pico 2; then the chip-only links go in; at power-on it all goes back.
+i_sw = [s[0] for s in STEPS].index("Later: swap to Pico 2")
+i_co = [s[0] for s in STEPS].index("Later: chip-only power mode")
+i_on = len(STEPS) - 1
+s_sw, s_co, s_on = (i * STEP + 1 for i in (i_sw, i_co, i_on))
+OUT = Vector((0, 130, -5))                         # tin pulled out through the hatch onto the table
+HATCH_ASIDE = Vector((175, 60, 0))                 # the hatch piece set down beside the box
+tin_wires = pico_wires
+key_vis(tin_wires, s_sw, False)                    # still plugged in, hidden while the tin is out
+key_loc(R["hatch"], s_sw + 8, HOME["hatch"])
+key_loc(R["hatch"], s_sw + 20, HATCH_ASIDE)
+key_loc(R["tin asm"], s_sw + 20, HOME["tin asm"])
+key_loc(R["tin asm"], s_sw + 44, OUT)
+key_loc(R["pico"], s_sw + 46, HOME["pico"])
+key_loc(R["pico"], s_sw + 58, Vector((0, 0, 70)))
+key_vis(group("pico"), s_sw + 60, False)
+key_vis(group("pico2"), s_sw + 60, True)
+key_loc(R["pico2"], s_sw + 60, Vector((0, 0, 70)))
+key_loc(R["pico2"], s_sw + 78, HOME["pico2"])
+# chip-only links drop in
+key_vis(chip_links, s_co + 14, True)
+key_loc(R["chip links"], s_co + 14, Vector((0, 0, 40)))
+key_loc(R["chip links"], s_co + 40, HOME["chip links"])
+# power on: tin and hatch back, wires visible again with the red jumper in its chip-only hole
+key_loc(R["tin asm"], s_on, OUT)
+key_loc(R["tin asm"], s_on + 14, HOME["tin asm"])
+key_loc(R["hatch"], s_on, HATCH_ASIDE)
+key_loc(R["hatch"], s_on + 14, HOME["hatch"])
+key_vis([w for w in tin_wires if w is not red_wire] + [chip_red], s_on + 14, True)
+chip_red.data.bevel_factor_end = 1.0
+chip_red.data.keyframe_insert("bevel_factor_end", frame=s_on + 14)
 
 # right wall as a cut-away while the tin goes in and the Pico wires are routed
 i_tin = [s[0] for s in STEPS].index("Place the Pico tin")
@@ -522,6 +617,7 @@ bpy.data.materials["foam board (matt black)"].diffuse_color = (0.2, 0.2, 0.215, 
 m_rail = bpy.data.materials["foam board (matt black)"].copy()                         # rails a shade lighter
 m_rail.name = "foam board strips (drawn lighter)"
 m_rail.diffuse_color = (0.42, 0.42, 0.44, 1)
+bpy.data.materials["service hatch"].diffuse_color = (0.13, 0.13, 0.14, 1)       # a shade darker than the wall
 for o in group("rails", "rails R"):
     o.data.materials[0] = m_rail
 bpy.data.materials["clear acrylic pane"].diffuse_color = (0.65, 0.85, 1.0, 0.22)
