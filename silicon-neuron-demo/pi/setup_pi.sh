@@ -23,6 +23,7 @@ add_line "enable_uart=1"
 add_line "dtoverlay=disable-bt"                # gives /dev/serial0 the good UART
 add_line "dtparam=i2c_arm=on"
 add_line "dtparam=i2c_arm_baudrate=400000"    # faster INA226 sampling
+add_line "dtoverlay=w1-gpio,gpiopin=4"         # DS18B20 temperature probe on pin 7 (4.7k pull-up on the board)
 
 echo "== force 1024x600 on HDMI (7in panels sometimes send a poor EDID)"
 grep -q "video=HDMI-A-1:1024x600@60" "$CMD" || sudo sed -i 's/$/ video=HDMI-A-1:1024x600@60/' "$CMD"
@@ -34,3 +35,5 @@ sudo systemctl daemon-reload
 sudo systemctl enable hologram.service
 
 echo "done — reboot, then check:  i2cdetect -y 1   (INA226 should show at 40)"
+echo "                              ls /sys/bus/w1/devices/   (DS18B20 shows as 28-...)"
+echo "then calibrate the meter:     python3 calibrate.py"

@@ -305,6 +305,7 @@ def main():
 
     class _A:  # adapt to bench.make_link
         sim, port, chip, shunt = a.sim, a.port, a.chip, a.shunt
+        calibration = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", "calibration.json")
     bundle, link, sensor = make_link(_A)
 
     pg.init()
@@ -336,7 +337,8 @@ def main():
         print("saved", a.snapshot)
         return
 
-    sampler = Sampler(sensor, link)
+    from sensors import StatusLEDs
+    sampler = Sampler(sensor, link, leds=StatusLEDs(enabled=not a.sim))
     sampler.start()
     worker = DemoWorker(link, sampler, bundle)
     worker.start()
