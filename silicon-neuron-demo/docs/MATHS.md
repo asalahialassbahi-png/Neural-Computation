@@ -239,8 +239,12 @@ $$c_{(1)}[n] - c_{(2)}[n] \;\ge\; m\,(n+1).$$
 Comparing with $m(n+1)$ rather than $m$ keeps the rule in the units of the
 trained logits $z^{(n)}$. The margin $m$ is a whole number of thresholds
 (SNN-E: $m = 3\theta$), chosen on the **validation** images as the cheapest
-margin whose accuracy is within 0.1 points of never stopping early. On the test
-set the network then stops after **1.38 of 8 steps on average**.
+margin for which stopping early **changes the answer on at most 0.1% of the
+images** compared with always running all 8 steps. (Comparing two accuracies
+measured on 5,000 images would be noisier: sampling alone moves an accuracy by
+about $\pm\sqrt{p(1-p)/5000}\approx\pm0.2$ points, while agreement between two
+predictions of the same images is measured almost exactly.) On the test set the
+network then stops after **1.38 of 8 steps on average**.
 
 ---
 

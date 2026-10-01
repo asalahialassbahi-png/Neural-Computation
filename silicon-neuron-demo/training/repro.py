@@ -65,14 +65,18 @@ def manifest():
     return {"python": sys.version.split()[0], "numpy": np.__version__, "platform": platform.platform(),
             "mnist_sha256": {f: sha(os.path.join(data, f)) for f in sorted(os.listdir(data)) if f.endswith(".gz")},
             "source_sha256": {f: sha(os.path.join(HERE, f)) for f in src},
-            "recipes": RECIPES}
+            "recipes": RECIPES, "blas_threads": 2,
+            "note": "bit-identical reruns need the same NumPy/BLAS build and thread count; otherwise "
+                    "results differ within the seed-to-seed spread reported here"}
 
 
 def train(kind, seed):
     path = os.path.join(OUT, f"{kind}_seed{seed}.npz")
     if not os.path.exists(path):
         cmd = [sys.executable, os.path.join(HERE, "train.py"), *RECIPES[kind], "--seed", str(seed), "--out", path]
-        r = subprocess.run(cmd, capture_output=True, text=True)
+        # a fixed BLAS thread count makes float summation order, and so training, reproducible
+        r = subprocess.run(cmd, capture_output=True, text=True, env={**os.environ, "OMP_NUM_THREADS": "2",
+                                                                       "OPENBLAS_NUM_THREADS": "2"})
         open(path.replace(".npz", ".log"), "w").write(r.stdout + r.stderr)
         if r.returncode:
             raise RuntimeError(f"{kind} seed {seed} failed:\n{r.stderr[-800:]}")

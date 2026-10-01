@@ -204,7 +204,7 @@ def snn_fast_int(q, x_u8, exit_margin=None, n_min=1):
 EXIT_MARGIN_K = (0.5, 1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64)   # candidate margins, in thresholds
 
 
-def choose_exit_margin(q, x_val, y_val, cycles_fn, max_changed=0.002):
+def choose_exit_margin(q, x_val, y_val, cycles_fn, max_changed=0.001):
     """The deployed early-exit rule, chosen on VALIDATION images only: the margin
     (a whole number of thresholds) with the fewest predicted Pico cycles for which
     stopping early CHANGES THE ANSWER on at most max_changed of the images,
