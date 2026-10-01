@@ -3,3 +3,4 @@ silicon-neuron-demo/blender/renders/assembly_captioned/
 silicon-neuron-demo/blender/renders/preview/
 __pycache__/
 *.blend1
+silicon-neuron-demo/blender/renders/ghost_quads.json

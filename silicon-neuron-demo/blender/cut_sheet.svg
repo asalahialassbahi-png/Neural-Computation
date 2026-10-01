@@ -11,13 +11,16 @@
 <rect x="245.0" y="255.0" width="225.0" height="180.0" fill="none" stroke="red" stroke-width="0.3"/>
 <text x="248.0" y="264.0" font-size="6" font-family="sans-serif">SIDE R  225 x 180 mm</text>
 <rect x="10" y="460.0" width="196.0" height="180.0" fill="none" stroke="red" stroke-width="0.3"/>
-<text x="13" y="469.0" font-size="6" font-family="sans-serif">BACK (slot = USB power in)  196 x 180 mm</text>
+<text x="13" y="469.0" font-size="6" font-family="sans-serif">BACK, seen from the front (slot = USB power in, Pi side; keep the hatch piece)  196 x 180 mm</text>
 <rect x="30.0" y="475.0" width="24.0" height="12.0" fill="none" stroke="blue" stroke-width="0.3"/>
+<rect x="48.0" y="545.0" width="120.0" height="95.0" fill="none" stroke="blue" stroke-width="0.3"/>
 <rect x="216.0" y="460.0" width="196.0" height="45.0" fill="none" stroke="red" stroke-width="0.3"/>
-<text x="219.0" y="469.0" font-size="6" font-family="sans-serif">CAP FRONT (24 mm button hole)  196 x 45 mm</text>
+<text x="219.0" y="469.0" font-size="6" font-family="sans-serif">CAP FRONT (24 mm button, two 5 mm LED holes)  196 x 45 mm</text>
 <circle cx="382.0" cy="482.5" r="12.0" fill="none" stroke="blue" stroke-width="0.3"/>
+<circle cx="228.0" cy="475.0" r="2.5" fill="none" stroke="blue" stroke-width="0.3"/>
+<circle cx="228.0" cy="490.0" r="2.5" fill="none" stroke="blue" stroke-width="0.3"/>
 <rect x="422.0" y="460.0" width="196.0" height="220.0" fill="none" stroke="red" stroke-width="0.3"/>
-<text x="425.0" y="469.0" font-size="6" font-family="sans-serif">CAP LID  196 x 220 mm</text>
+<text x="425.0" y="469.0" font-size="6" font-family="sans-serif">CAP LID (top edge of drawing = front)  196 x 220 mm</text>
 <rect x="452.0" y="640.0" width="10.0" height="30.0" fill="none" stroke="blue" stroke-width="0.3"/>
 <rect x="474.0" y="640.0" width="10.0" height="30.0" fill="none" stroke="blue" stroke-width="0.3"/>
 <rect x="496.0" y="640.0" width="10.0" height="30.0" fill="none" stroke="blue" stroke-width="0.3"/>
