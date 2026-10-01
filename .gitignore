@@ -7,3 +7,5 @@ silicon-neuron-demo/blender/renders/ghost_quads.json
 silicon-neuron-demo/training/weights/sweep/*.npz
 silicon-neuron-demo/firmware/host_test/host_test
 __pycache__/
+silicon-neuron-demo/training/weights/exp_e/
+silicon-neuron-demo/training/weights/repro/*.npz

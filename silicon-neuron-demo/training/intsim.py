@@ -199,3 +199,28 @@ def snn_fast_int(q, x_u8, exit_margin=None, n_min=1):
             steps[a[done]] = n + 1
             active[a[done]] = False
     return c.argmax(1), c, {"steps": steps, "events": events, "hid_spikes": hid}
+
+
+EXIT_MARGIN_K = (0.5, 1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64)   # candidate margins, in thresholds
+
+
+def choose_exit_margin(q, x_val, y_val, cycles_fn, max_changed=0.002):
+    """The deployed early-exit rule, chosen on VALIDATION images only: the margin
+    (a whole number of thresholds) with the fewest predicted Pico cycles for which
+    stopping early CHANGES THE ANSWER on at most max_changed of the images,
+    compared with always running every step. Agreement between two predictions
+    of the same images is a much less noisy statistic than the difference of two
+    accuracies (5,000 images give accuracy +/- 0.2 points by sampling alone).
+    Returns (margin, acc, base_acc, cycles)."""
+    p_full = snn_fast_int(q, x_val)[0]
+    base = float((p_full == y_val).mean())
+    best = (-1, base, base, None)
+    for k in EXIT_MARGIN_K:
+        m = int(round(k * q["theta"]))
+        p, _, cnt = snn_fast_int(q, x_val, exit_margin=m)
+        changed = float((p != p_full).mean())
+        cyc = cycles_fn("snn_fast", events=cnt["events"].mean(), hid_spikes=cnt["hid_spikes"].mean(),
+                        steps=cnt["steps"].mean())["total"]
+        if changed <= max_changed and (best[3] is None or cyc < best[3]):
+            best = (m, float((p == y_val).mean()), base, cyc)
+    return best

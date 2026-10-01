@@ -16,7 +16,7 @@ import numpy as np
 import config as C
 from energy_model import pico_cycles
 from intsim import (quantise_ann, quantise_snn, ann_int, snn_int, input_spikes_int, op_counts,
-                    quantise_snn_fast, snn_fast_int)
+                    quantise_snn_fast, snn_fast_int, choose_exit_margin)
 from mnist_idx import load_mnist
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -72,17 +72,9 @@ def main():
         # exit margin chosen on VALIDATION images (the last 5,000 training images):
         # the cheapest margin whose accuracy is within 0.1 percentage points of no exit
         xva, yva = xtr[-5000:], ytr[-5000:]
-        base = (snn_fast_int(qf, xva)[0] == yva).mean()
-        best = (None, base, None)
-        for k in (0.5, 1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64):     # margin in units of theta
-            m = int(round(k * qf["theta"]))
-            p_, _, cnt = snn_fast_int(qf, xva, exit_margin=m)
-            acc = (p_ == yva).mean()
-            cyc = pico_cycles("snn_fast", events=cnt["events"].mean(), hid_spikes=cnt["hid_spikes"].mean(),
-                              steps=cnt["steps"].mean())["total"]
-            if acc >= base - 0.001 and (best[2] is None or cyc < best[2]):
-                best = (m, acc, cyc)
-        qf["exit_margin"] = int(best[0]) if best[0] is not None else -1
+        m, acc_v, base, _ = choose_exit_margin(qf, xva, yva, pico_cycles)
+        best = (m, acc_v)
+        qf["exit_margin"] = int(m)
         qf["n_min"] = 1
         p_, c_, cnt = snn_fast_int(qf, xte, exit_margin=qf["exit_margin"] if qf["exit_margin"] >= 0 else None)
         assert np.abs(c_).max() < 2 ** 31

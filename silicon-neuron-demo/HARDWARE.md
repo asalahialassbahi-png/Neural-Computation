@@ -38,6 +38,8 @@ usually in a starter kit; buy them only if you don't have them.
 | 5 V USB-A charger, ≥ 2.4 A | 1 | *owned?* (6.00) | on the table | powers everything through the USB meter |
 | USB inline power meter | 1 | **owned** | between the charger and the cable | whole-demo power and the cross-check |
 | Beam-splitter film (optional) | 1 | 9.00 | on the acrylic | 30–50 % reflection in a lit room |
+| Scroll wheel from a broken mouse (or a KY-040 rotary encoder) | 1 | free (KY-040 ≈1.50) | cap front, right of the button | turn = switch network, click = switch view in the hologram |
+| Powered micro-USB OTG hub (optional) | 1 | ≈6 | between the Pi's OTG port and the screen USB | only if you want a whole USB mouse instead of the salvaged wheel |
 
 **New spend ≈ £30** (Pico 2, LDO, DS18B20, mini board, jumpers, multimeter, cable),
 **≈ £45** if you also buy the resistor/capacitor/LED bits, a charger and the film —
@@ -100,7 +102,27 @@ Pi header pins are physical pin numbers (pin 1 = 3.3 V, next to the SD card end)
 
 **Button and screen** — as v1: Pi pin 13 (GPIO27) and pin 14 (GND) to the button
 legs (purple / black); mini-HDMI to the screen; OTG adapter + micro-USB to USB-A
-cable to the screen's USB.
+cable to the screen's USB. Short press = next digit; hold 1 s = next view.
+
+**Scroll wheel (switches networks and views)** — a mechanical mouse wheel is a
+3-pin quadrature encoder plus a click switch underneath it:
+
+| Wheel pin | Pi pin | Colour | What it does |
+|---|---|---|---|
+| encoder A (an outer pin) | 29 (GPIO5) | blue | turn: next / previous network |
+| encoder common (middle pin) | 30 (GND) | black | |
+| encoder B (other outer pin) | 31 (GPIO6) | green | |
+| click switch, one leg | 33 (GPIO13) | white | click: next view |
+| click switch, other leg | 34 (GND) | black | |
+
+The Pi's internal pull-ups are used, so no resistors are needed. If the wheel
+turns the wrong way, swap A and B. Optical mouse wheels (an LED shining through
+a slotted disc) cannot be wired like this: use a KY-040 encoder (CLK → GPIO5,
+DT → GPIO6, SW → GPIO13, + → 3.3 V from a free hole of the calibration board's
+row j1 (both 3.3 V pins on the header are already used), GND → pin 30). A whole USB mouse also
+works (wheel = network, left/middle click = view, right click = next digit) but
+needs a powered OTG hub, because the Pi Zero's only USB port feeds the screen.
+With no input for 90 s the hologram tours all networks and views by itself.
 
 **Power** — USB charger → USB inline meter → micro-USB to USB-A cable → back
 slot → Pi PWR port. The Pico is never powered from the Pi's 5 V directly: its

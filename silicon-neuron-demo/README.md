@@ -19,22 +19,39 @@ This README is the command reference.
 | `pi/` | Raspberry Pi software: INA226 driver, Pico link, benchmark protocol, statistics, hologram display |
 | `blender/` | `build_demo.py` builds the enclosure in Blender, writes `cut_sheet.svg`, renders the four views |
 
+## The five networks
+
+| code | network | what it shows |
+|---|---|---|
+| A | ANN, dense | the yardstick: 238,200 multiply-adds per digit |
+| Z | ANN, skips zero pixels | a fair, sparsity-aware ANN |
+| L | SNN, latency code, 16 steps | the textbook SNN: on a Pico it narrowly LOSES to Z |
+| P | SNN, rate (Poisson) code | why rate coding is the wrong code for a CPU |
+| E | SNN-E, Pico-optimised | first-order LIF, short latency code, early exit: 1.86x less work than Z, 9.8x less than A |
+
+The maths, derived from first principles: `docs/MATHS.md`. The evidence
+(statistics, emulated cycles, figures): `results/PROOF.md`. Repeatability over
+five seeds: `results/repro.md`.
+
 ## Order of operations
 
-On your PC (Python 3.10+, `pip install numpy`):
+On your PC (Python 3.10+, `pip install numpy`; `matplotlib` for figures;
+`unicorn capstone pyelftools` + `arm-none-eabi-gcc` for the cycle audit):
 
 ```
 cd training
-python gradcheck.py                          # gate: errors shrink ~100x per row, last < 1e-6
+python gradcheck.py                          # gate: GRADIENT CHECK: PASS (ANN, SNN, SNN-E)
 python train.py --model ann                  # ~1 min
 python train.py --model snn --enc latency --epochs 20
 python train.py --model snn --enc poisson --epochs 20
+python sweep.py                              # SNN-E design sweep on validation data (~25 min)
+cp weights/sweep/T8_tin3_x96_lam1.npz weights/snn_fast_float.npz   # the chosen SNN-E
 python export.py                             # int8 weights -> firmware/generated + pi/model_bundle.npz
 python verify_c.py                           # needs gcc; must print BIT-EXACT: PASS
+python cycle_audit.py --n 200                # emulated Pico cycles per network -> results/, pi/model_costs.json
+python prove.py                              # statistics + figures -> results/PROOF.md
+python repro.py                              # 5 seeds from scratch -> results/repro.md (~20 min)
 ```
-
-Sparsity dial (dissertation Pareto curve): retrain the latency SNN with
-`--lam 0.0 / 0.5 / 2 / 5 --tag lamX` and re-run export on each.
 
 Firmware (skip if you use the prebuilt `firmware/uf2/*.uf2`): install the
 Raspberry Pi Pico VS Code extension, open `firmware/`, pick board `pico` or
@@ -50,6 +67,7 @@ i2cdetect -y 1                  # INA226 at 0x40
 python3 bench.py                # 30 interleaved rounds (~3 min) -> results/bench.csv
 python3 analyse.py results/bench.csv --plots
 python3 hologram.py             # starts automatically at boot after setup
+                                # scroll wheel = network, click = view, button = next digit
 ```
 
 Before each measuring session, calibrate the meter (lid off, ~5 min; see HARDWARE.md):
@@ -60,7 +78,7 @@ No hardware yet? Everything on the Pi side runs with `--sim` (made-up energy
 numbers — never quote them):
 
 ```
-python3 hologram.py --sim --windowed --no-mirror
+python3 hologram.py --sim --windowed --no-mirror      # arrows: network/view, SPACE: digit, T: tour
 python3 bench.py --sim --trials 3
 ```
 
