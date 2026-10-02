@@ -9,3 +9,4 @@ silicon-neuron-demo/firmware/host_test/host_test
 __pycache__/
 silicon-neuron-demo/training/weights/exp_e/
 silicon-neuron-demo/training/weights/repro/*.npz
+.venv/
